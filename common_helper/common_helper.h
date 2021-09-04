@@ -17,6 +17,7 @@ limitations under the License.
 
 /* for general */
 #include <cstdint>
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include <string>
 #include <vector>

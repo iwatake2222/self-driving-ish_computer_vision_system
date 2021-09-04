@@ -29,7 +29,7 @@ limitations under the License.
 
 /*** Macro ***/
 #define WORK_DIR                      RESOURCE_DIR
-#define DEFAULT_INPUT_IMAGE           RESOURCE_DIR"/dog.jpg"
+#define DEFAULT_INPUT_IMAGE           RESOURCE_DIR"/dashcam_00.jpg"
 #define LOOP_NUM_FOR_TIME_MEASUREMENT 10
 
 /*** Function ***/
@@ -84,6 +84,7 @@ int32_t main(int argc, char* argv[])
         /* Display result */
         if (writer.isOpened()) writer.write(result.mat_output);
         cv::imshow("output", result.mat_output);
+        cv::imshow("output_topview", result.mat_output_topview);
 
         /* Input key command */
         if (cap.isOpened()) {

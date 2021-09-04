@@ -24,9 +24,9 @@ limitations under the License.
 
 #include <opencv2/opencv.hpp>
 
-
-static inline float Deg2Rad(float deg) { return static_cast<float>(deg * M_PI / 180.0); }
-static inline float Rad2Deg(float rad) { return static_cast<float>(rad * 180.0 / M_PI); }
+#ifndef M_PI
+#define M_PI 3.141592653f
+#endif
 
 class CameraModel {
 public:
@@ -76,14 +76,21 @@ public:
                            0,            0,            1);
         }
 
-        void SetExtrinsic(std::array<float, 3> r_deg, std::array<float, 3> t) {
+        void SetExtrinsic(const std::array<float, 3>& r_deg, const std::array<float, 3>& t) {
             rvec = (cv::Mat_<float>(3, 1) << Deg2Rad(r_deg[0]), Deg2Rad(r_deg[1]), Deg2Rad(r_deg[2]));
             tvec = (cv::Mat_<float>(3, 1) << t[0], t[1], t[2]);
+        }
+
+        void GetExtrinsic(std::array<float, 3>& r_deg, std::array<float, 3>& t) {
+            r_deg = { Rad2Deg(rvec.at<float>(0)), Rad2Deg(rvec.at<float>(1)) , Rad2Deg(rvec.at<float>(2)) };
+            t = { tvec.at<float>(0), tvec.at<float>(1), tvec.at<float>(2) };
         }
     };
 
     Parameter parameter;
 
+    static inline float Deg2Rad(float deg) { return static_cast<float>(deg * M_PI / 180.0); }
+    static inline float Rad2Deg(float rad) { return static_cast<float>(rad * 180.0 / M_PI); }
 
     static float FocalLength(int32_t image_size, float fov)
     {
