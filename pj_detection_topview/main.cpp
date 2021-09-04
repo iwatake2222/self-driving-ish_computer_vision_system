@@ -82,8 +82,8 @@ int32_t main(int argc, char* argv[])
         const auto& time_image_process1 = std::chrono::steady_clock::now();
 
         /* Display result */
-        if (writer.isOpened()) writer.write(image);
-        cv::imshow("test", image);
+        if (writer.isOpened()) writer.write(result.mat_output);
+        cv::imshow("output", result.mat_output);
 
         /* Input key command */
         if (cap.isOpened()) {

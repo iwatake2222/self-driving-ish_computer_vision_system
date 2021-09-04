@@ -25,12 +25,19 @@ namespace cv {
 
 class ImageProcessorIf {
 public:
+    enum {
+        kRetOk = 0,
+        kRetErr = -1,
+    };
+
     typedef struct {
         char     work_dir[256];
         int32_t  num_threads;
     } InputParam;
 
     typedef struct {
+        cv::Mat mat_output;
+        cv::Mat mat_output_topview;
         double time_pre_process;   // [msec]
         double time_inference;    // [msec]
         double time_post_process;  // [msec]
@@ -42,7 +49,7 @@ public:
 public:
     virtual ~ImageProcessorIf() {}
     virtual int32_t Initialize(const InputParam& input_param) = 0;
-    virtual int32_t Process(cv::Mat& mat, Result& result) = 0;
+    virtual int32_t Process(const cv::Mat& mat_original, Result& result) = 0;
     virtual int32_t Finalize(void) = 0;
     virtual int32_t Command(int32_t cmd) = 0;
 };
