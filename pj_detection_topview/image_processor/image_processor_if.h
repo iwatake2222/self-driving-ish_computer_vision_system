@@ -12,30 +12,39 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef IMAGE_PROCESSOR_H_
-#define IMAGE_PROCESSOR_H_
+#ifndef IMAGE_PROCESSOR_IF_H_
+#define IMAGE_PROCESSOR_IF_H_
 
 /* for general */
 #include <cstdint>
-#include <cmath>
-#include <string>
-#include <vector>
-#include <array>
-
-#include "image_processor_if.h"
+#include <memory>
 
 namespace cv {
     class Mat;
 };
 
-class ImageProcessor : public ImageProcessorIf {
+class ImageProcessorIf {
 public:
-    ImageProcessor();
-    ~ImageProcessor() override;
-    int32_t Initialize(const InputParam& input_param) override;
-    int32_t Process(cv::Mat& mat, Result& result) override;
-    int32_t Finalize(void) override;
-    int32_t Command(int32_t cmd) override;
+    typedef struct {
+        char     work_dir[256];
+        int32_t  num_threads;
+    } InputParam;
+
+    typedef struct {
+        double time_pre_process;   // [msec]
+        double time_inference;    // [msec]
+        double time_post_process;  // [msec]
+    } Result;
+
+public:
+    static std::unique_ptr<ImageProcessorIf> Create();
+
+public:
+    virtual ~ImageProcessorIf() {}
+    virtual int32_t Initialize(const InputParam& input_param) = 0;
+    virtual int32_t Process(cv::Mat& mat, Result& result) = 0;
+    virtual int32_t Finalize(void) = 0;
+    virtual int32_t Command(int32_t cmd) = 0;
 };
 
 #endif

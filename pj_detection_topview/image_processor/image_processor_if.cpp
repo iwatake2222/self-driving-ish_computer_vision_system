@@ -15,56 +15,25 @@ limitations under the License.
 /*** Include ***/
 /* for general */
 #include <cstdint>
-#include <cstdlib>
-#include <cmath>
-#include <cstring>
-#include <string>
-#include <vector>
-#include <array>
-#include <algorithm>
-#include <chrono>
-#include <fstream>
 #include <memory>
-
-/* for OpenCV */
-#include <opencv2/opencv.hpp>
 
 /* for My modules */
 #include "image_processor.h"
 #include "image_processor_if.h"
 
+
 /*** Macro ***/
-#define TAG "ImageProcessor"
+#define TAG "ImageProcessorIf"
 #define PRINT(...)   COMMON_HELPER_PRINT(TAG, __VA_ARGS__)
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
+
 /*** Global variable ***/
 
+
 /*** Function ***/
-ImageProcessor::ImageProcessor()
+std::unique_ptr<ImageProcessorIf> ImageProcessorIf::Create()
 {
-}
-
-ImageProcessor::~ImageProcessor()
-{
-}
-
-int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_param)
-{
-    return 0;
-}
-
-int32_t ImageProcessor::Finalize(void)
-{
-    return 0;
-}
-
-int32_t ImageProcessor::Command(int32_t cmd)
-{
-    return 0;
-}
-
-int32_t ImageProcessor::Process(cv::Mat& mat, ImageProcessorIf::Result& result)
-{
-    return 0;
+    std::unique_ptr<ImageProcessorIf> ret(new ImageProcessor());
+    return ret;
 }
