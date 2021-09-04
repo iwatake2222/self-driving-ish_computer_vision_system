@@ -219,8 +219,10 @@ cv::Scalar ImageProcessor::GetColorForId(int32_t id)
 
 void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
 {
-    camera_real.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
-    camera_top.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
+    if (width > 0 && height > 0 && fov_deg > 0) {
+        camera_real.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
+        camera_top.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
+    }
     camera_real.parameter.SetExtrinsic(
         { 0.0f, 0.0f, 0.0f },    /* rvec [deg] */
         { 0.0f, 1.0f, 0.0f });   /* tvec */
@@ -230,14 +232,19 @@ void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
     CreateTransformMat();
 }
 
-void ImageProcessor::GetCameraParameter(std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec)
+void ImageProcessor::GetCameraParameter(float& focal_length, std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec)
 {
+    focal_length = camera_real.parameter.fx();
     camera_real.parameter.GetExtrinsic(real_rvec, real_tvec);
     camera_top.parameter.GetExtrinsic(top_rvec, top_tvec);
 }
 
-void ImageProcessor::SetCameraParameter(const std::array<float, 3>& real_rvec, const std::array<float, 3>& real_tvec, const std::array<float, 3>& top_rvec, const std::array<float, 3>& top_tvec)
+void ImageProcessor::SetCameraParameter(float focal_length, const std::array<float, 3>& real_rvec, const std::array<float, 3>& real_tvec, const std::array<float, 3>& top_rvec, const std::array<float, 3>& top_tvec)
 {
+    camera_real.parameter.fx() = focal_length;
+    camera_real.parameter.fy() = focal_length;
+    camera_top.parameter.fx() = focal_length;
+    camera_top.parameter.fy() = focal_length;
     camera_real.parameter.SetExtrinsic(real_rvec, real_tvec);
     camera_top.parameter.SetExtrinsic(top_rvec, top_tvec);
     CreateTransformMat();
@@ -267,4 +274,5 @@ void ImageProcessor::CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_
     /* Perspective Transform */   
     mat_topview = cv::Mat(mat_original.size(), CV_8UC3, cv::Scalar(70, 70, 70));
     cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
+    //mat_topview = mat_topview(cv::Rect(0, 360, 1280, 360));
 }

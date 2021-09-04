@@ -44,16 +44,18 @@ public:
     int32_t Finalize(void) override;
     int32_t Command(int32_t cmd) override;
 
+    void ResetCamera(int32_t width = 0, int32_t height = 0, float fov_deg = 0) override;
+    void GetCameraParameter(float& focal_length, std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec) override;
+    void SetCameraParameter(float focal_length, const std::array<float, 3>& real_rvec, const std::array<float, 3>& real_tvec, const std::array<float, 3>& top_rvec, const std::array<float, 3>& top_tvec) override;
+
 private:
     void DrawFps(cv::Mat& mat, double time_inference, cv::Point pos, double font_scale, int32_t thickness, cv::Scalar color_front, cv::Scalar color_back, bool is_text_on_rect = true);
     cv::Scalar GetColorForId(int32_t id);
     int32_t ProcessObjectDetection(const cv::Mat& mat_original, DetectionEngine::Result& det_result);
     void DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, const DetectionEngine::Result& det_result);
-    void ResetCamera(int32_t width, int32_t height, float fov_deg);
     void CreateTransformMat();
     void CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_topview);
-    void GetCameraParameter(std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec);
-    void SetCameraParameter(const std::array<float, 3>& real_rvec, const std::array<float, 3>& real_tvec, const std::array<float, 3>& top_rvec, const std::array<float, 3>& top_tvec);
+
 
 private:
     int32_t frame_cnt;
