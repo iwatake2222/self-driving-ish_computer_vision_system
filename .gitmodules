@@ -1,0 +1,3 @@
+[submodule "InferenceHelper"]
+	path = InferenceHelper
+	url = https://github.com/iwatake2222/InferenceHelper
