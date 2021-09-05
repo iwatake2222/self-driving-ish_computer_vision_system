@@ -56,6 +56,7 @@ limitations under the License.
 ImageProcessor::ImageProcessor()
 {
     frame_cnt_ = 0;
+    vanishment_y = 1280 / 2;
 }
 
 ImageProcessor::~ImageProcessor()
@@ -85,6 +86,7 @@ int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_par
     }
 
     frame_cnt_ = 0;
+    vanishment_y = 1280 / 2;
 
     return kRetOk;
 }
@@ -162,6 +164,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     cv::resize(mat_segmentation, mat_segmentation, mat.size());
     //cv::add(mat_segmentation, mat, mat);
     CreateTopViewMat(mat_segmentation, mat_topview);
+    mat_segmentation = mat_segmentation(cv::Rect(0, vanishment_y, mat_segmentation.cols, mat_segmentation.rows - vanishment_y));
 
     DrawLaneDetection(mat, mat_topview, lane_result);
     DrawObjectDetection(mat, mat_topview, det_result);
@@ -283,14 +286,19 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
         /* Use white rectangle for the object which was not detected but just predicted */
         cv::Scalar color = bbox.score == 0 ? CommonHelper::CreateCvColor(255, 255, 255) : GetColorForId(track.GetId());
         cv::rectangle(mat, cv::Rect(bbox.x, bbox.y, bbox.w, bbox.h), color, 2);
-        CommonHelper::DrawText(mat, std::to_string(track.GetId()) + ": " + bbox.label, cv::Point(bbox.x, bbox.y - 13), 0.35, 1, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
 
-        auto& track_history = track.GetDataHistory();
-        for (size_t i = 1; i < track_history.size(); i++) {
-            cv::Point p0(track_history[i].bbox.x + track_history[i].bbox.w / 2, track_history[i].bbox.y + track_history[i].bbox.h);
-            cv::Point p1(track_history[i - 1].bbox.x + track_history[i - 1].bbox.w / 2, track_history[i - 1].bbox.y + track_history[i - 1].bbox.h);
-            cv::line(mat, p0, p1, GetColorForId(track.GetId()));
-        }
+        cv::Point3f object_point;
+        camera_real_.ProjectImage2GroundPlane(cv::Point2f(bbox.x + bbox.w / 2, bbox.y + bbox.h), object_point);
+        char text[32];
+        snprintf(text, sizeof(text), "%s: %.1f,%.1f[m]", bbox.label, object_point.x, object_point.z);
+        CommonHelper::DrawText(mat, text, cv::Point(bbox.x, bbox.y - 13), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
+
+        //auto& track_history = track.GetDataHistory();
+        //for (size_t i = 1; i < track_history.size(); i++) {
+        //    cv::Point p0(track_history[i].bbox.x + track_history[i].bbox.w / 2, track_history[i].bbox.y + track_history[i].bbox.h);
+        //    cv::Point p1(track_history[i - 1].bbox.x + track_history[i - 1].bbox.w / 2, track_history[i - 1].bbox.y + track_history[i - 1].bbox.h);
+        //    cv::line(mat, p0, p1, GetColorForId(track.GetId()));
+        //}
     }
 
     /* Draw on TopView*/
@@ -311,16 +319,21 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
         track_data.topview.y = static_cast<int32_t>(topview_points[i].y);
         
         if (track.GetDetectedCount() < 2) continue;
-        cv::circle(mat_topview, topview_points[i], 5, GetColorForId(track.GetId()), -1);
+        cv::circle(mat_topview, topview_points[i], 10, GetColorForId(track.GetId()), -1);
+        cv::circle(mat_topview, topview_points[i], 10, cv::Scalar(0, 0, 0), 2);
 
-        CommonHelper::DrawText(mat_topview, track_data.bbox.label, topview_points[i], 0.35, 1, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
+        cv::Point3f object_point;
+        camera_real_.ProjectImage2GroundPlane(topview_points[i], object_point);
+        char text[32];
+        snprintf(text, sizeof(text), "%s: %.1f,%.1f[m]", track_data.bbox.label, object_point.x, object_point.z);
+        CommonHelper::DrawText(mat_topview, text, topview_points[i], 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
 
-        auto& track_history = track.GetDataHistory();
-        for (size_t i = 1; i < track_history.size(); i++) {
-            cv::Point p0(track_history[i - 1].topview.x, track_history[i - 1].topview.y);
-            cv::Point p1(track_history[i].topview.x, track_history[i].topview.y);
-            cv::line(mat_topview, p0, p1, GetColorForId(track.GetId()));
-        }
+        //auto& track_history = track.GetDataHistory();
+        //for (size_t i = 1; i < track_history.size(); i++) {
+        //    cv::Point p0(track_history[i - 1].topview.x, track_history[i - 1].topview.y);
+        //    cv::Point p1(track_history[i].topview.x, track_history[i].topview.y);
+        //    cv::line(mat_topview, p0, p1, GetColorForId(track.GetId()));
+        //}
     }
 }
 
@@ -391,6 +404,7 @@ void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
         { 90.0f, 0.0f, 0.0f },    /* rvec [deg] */
         { 0.0f, 8.0f, 7.0f });   /* tvec */  /* tvec is in camera coordinate, so Z is height because pitch = 90 */
     CreateTransformMat();
+    vanishment_y = camera_real_.EstimateVanishmentY();
 }
 
 void ImageProcessor::GetCameraParameter(float& focal_length, std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec)
@@ -409,6 +423,7 @@ void ImageProcessor::SetCameraParameter(float focal_length, const std::array<flo
     camera_real_.parameter.SetExtrinsic(real_rvec, real_tvec);
     camera_top_.parameter.SetExtrinsic(top_rvec, top_tvec);
     CreateTransformMat();
+    vanishment_y = camera_real_.EstimateVanishmentY();
 }
 
 void ImageProcessor::CreateTransformMat()

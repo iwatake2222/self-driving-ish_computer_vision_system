@@ -70,6 +70,7 @@ private:
     CameraModel camera_real_;
     CameraModel camera_top_;
     cv::Mat mat_transform_;
+    int32_t vanishment_y;
 
     DetectionEngine detection_engine_;
     Tracker tracker_;

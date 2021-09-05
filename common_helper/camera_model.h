@@ -234,6 +234,34 @@ public:
 
         //PRINT_MAT_FLOAT(TEMP, 3);
     }
+
+    /* tan(theta) = delta / f */
+    float EstimatePitch(float vanishment_y)
+    {
+        float pitch = std::atan2(parameter.cy() - vanishment_y, parameter.fy());
+        return Rad2Deg(pitch);
+    }
+
+    float EstimateYaw(float vanishment_x)
+    {
+        float yaw = std::atan2(parameter.cx() - vanishment_x, parameter.fx());
+        return Rad2Deg(yaw);
+    }
+
+    int32_t EstimateVanishmentY()
+    {
+        float px_from_center = std::tan(parameter.pitch()) * parameter.fy();
+        float vanishment_y = parameter.cy() - px_from_center;
+        return static_cast<int32_t>(vanishment_y);
+    }
+
+    int32_t EstimateVanishmentX()
+    {
+        float px_from_center = std::tan(parameter.yaw()) * parameter.fx();
+        float vanishment_x = parameter.cx() - px_from_center;
+        return static_cast<int32_t>(vanishment_x);
+    }
+
 };
 
 #endif
