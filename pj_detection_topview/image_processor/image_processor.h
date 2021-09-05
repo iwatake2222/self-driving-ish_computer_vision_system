@@ -66,15 +66,15 @@ private:
 
 
 private:
-    int32_t frame_cnt;
-    CameraModel camera_real;
-    CameraModel camera_top;
+    int32_t frame_cnt_;
+    CameraModel camera_real_;
+    CameraModel camera_top_;
     cv::Mat mat_transform_;
 
-    DetectionEngine m_detection_engine;
-    Tracker m_tracker;
-    LaneEngine m_lane_engine;
-    SemanticSegmentationEngine m_segmentation_engine;
+    DetectionEngine detection_engine_;
+    Tracker tracker_;
+    LaneEngine lane_engine_;
+    SemanticSegmentationEngine segmentation_engine_;
     DepthEngine depth_engine_;
 
 };

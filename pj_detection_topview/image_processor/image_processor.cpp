@@ -55,7 +55,7 @@ limitations under the License.
 /*** Function ***/
 ImageProcessor::ImageProcessor()
 {
-    frame_cnt = 0;
+    frame_cnt_ = 0;
 }
 
 ImageProcessor::~ImageProcessor()
@@ -64,18 +64,18 @@ ImageProcessor::~ImageProcessor()
 
 int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_param)
 {
-    if (m_detection_engine.Initialize(input_param.work_dir, input_param.num_threads) != DetectionEngine::kRetOk) {
-        m_detection_engine.Finalize();
+    if (detection_engine_.Initialize(input_param.work_dir, input_param.num_threads) != DetectionEngine::kRetOk) {
+        detection_engine_.Finalize();
         return kRetErr;
     }
 
-    if (m_lane_engine.Initialize(input_param.work_dir, input_param.num_threads) != LaneEngine::kRetOk) {
-        m_lane_engine.Finalize();
+    if (lane_engine_.Initialize(input_param.work_dir, input_param.num_threads) != LaneEngine::kRetOk) {
+        lane_engine_.Finalize();
         return kRetErr;
     }
 
-    if (m_segmentation_engine.Initialize(input_param.work_dir, input_param.num_threads) != SemanticSegmentationEngine::kRetOk) {
-        m_segmentation_engine.Finalize();
+    if (segmentation_engine_.Initialize(input_param.work_dir, input_param.num_threads) != SemanticSegmentationEngine::kRetOk) {
+        segmentation_engine_.Finalize();
         return kRetErr;
     }
 
@@ -84,22 +84,22 @@ int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_par
         return kRetErr;
     }
 
-    frame_cnt = 0;
+    frame_cnt_ = 0;
 
     return kRetOk;
 }
 
 int32_t ImageProcessor::Finalize(void)
 {
-    if (m_detection_engine.Finalize() != DetectionEngine::kRetOk) {
+    if (detection_engine_.Finalize() != DetectionEngine::kRetOk) {
         return kRetErr;
     }
 
-    if (m_lane_engine.Finalize() != LaneEngine::kRetOk) {
+    if (lane_engine_.Finalize() != LaneEngine::kRetOk) {
         return kRetErr;
     }
 
-    if (m_segmentation_engine.Finalize() != SemanticSegmentationEngine::kRetOk) {
+    if (segmentation_engine_.Finalize() != SemanticSegmentationEngine::kRetOk) {
         return kRetErr;
     }
 
@@ -124,24 +124,24 @@ int32_t ImageProcessor::Command(int32_t cmd)
 int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::Result& result)
 {
     /*** Initialize internal parameters using input image information ***/
-    if (frame_cnt == 0) {
+    if (frame_cnt_ == 0) {
         ResetCamera(mat_original.cols, mat_original.rows, 130.0f);
     }
 
     /*** Run inference ***/
     DetectionEngine::Result det_result;
-    if (m_detection_engine.Process(mat_original, det_result) != DetectionEngine::kRetOk) {
+    if (detection_engine_.Process(mat_original, det_result) != DetectionEngine::kRetOk) {
         return kRetErr;
     }
-    m_tracker.Update(det_result.bbox_list);
+    tracker_.Update(det_result.bbox_list);
 
     LaneEngine::Result lane_result;
-    if (m_lane_engine.Process(mat_original, lane_result) != LaneEngine::kRetOk) {
+    if (lane_engine_.Process(mat_original, lane_result) != LaneEngine::kRetOk) {
         return kRetErr;
     }
 
     SemanticSegmentationEngine::Result segmentation_result;
-    if (m_segmentation_engine.Process(mat_original, segmentation_result) != SemanticSegmentationEngine::kRetOk) {
+    if (segmentation_engine_.Process(mat_original, segmentation_result) != SemanticSegmentationEngine::kRetOk) {
         return kRetErr;
     }
 
@@ -168,11 +168,11 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     DrawDepth(mat_depth, depth_result);
 
     /*** Draw statistics ***/
-    CommonHelper::DrawText(mat, "DET: " + std::to_string(det_result.bbox_list.size()) + ", TRACK: " + std::to_string(m_tracker.GetTrackList().size()), cv::Point(0, 20), 0.7, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
+    CommonHelper::DrawText(mat, "DET: " + std::to_string(det_result.bbox_list.size()) + ", TRACK: " + std::to_string(tracker_.GetTrackList().size()), cv::Point(0, 20), 0.7, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
     DrawFps(mat, det_result.time_inference, cv::Point(0, 0), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(180, 180, 180), true);
 
     /*** Update internal status ***/
-    frame_cnt++;
+    frame_cnt_++;
 
     /*** Return the results ***/
     result.mat_output = mat;
@@ -200,10 +200,10 @@ void ImageProcessor::DrawDepth(cv::Mat& mat, const DepthEngine::Result& depth_re
         crop.y *= -1;
         crop.height -= 2 * crop.y;
     }
-    crop.x *= scale_w;
-    crop.width *= scale_w;
-    crop.y *= scale_h;
-    crop.height *= scale_h;
+    crop.x = static_cast<int32_t>(crop.x * scale_w);
+    crop.width = static_cast<int32_t>(crop.width * scale_w);
+    crop.y = static_cast<int32_t>(crop.y * scale_h);
+    crop.height = static_cast<int32_t>(crop.height * scale_h);
     cv::applyColorMap(depth_result.mat_out(crop), mat, cv::COLORMAP_JET);
 }
 
@@ -276,7 +276,7 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
         cv::rectangle(mat, cv::Rect(bbox.x, bbox.y, bbox.w, bbox.h), CommonHelper::CreateCvColor(0, 0, 0), 1);
     }
 
-    auto& track_list = m_tracker.GetTrackList();
+    auto& track_list = tracker_.GetTrackList();
     for (auto& track : track_list) {
         if (track.GetDetectedCount() < 2) continue;
         const auto& bbox = track.GetLatestData().bbox;
@@ -381,13 +381,13 @@ cv::Scalar ImageProcessor::GetColorForSegmentation(int32_t id)
 void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
 {
     if (width > 0 && height > 0 && fov_deg > 0) {
-        camera_real.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
-        camera_top.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
+        camera_real_.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
+        camera_top_.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
     }
-    camera_real.parameter.SetExtrinsic(
+    camera_real_.parameter.SetExtrinsic(
         { 0.0f, 0.0f, 0.0f },    /* rvec [deg] */
         { 0.0f, 1.0f, 0.0f });   /* tvec */
-    camera_top.parameter.SetExtrinsic(
+    camera_top_.parameter.SetExtrinsic(
         { 90.0f, 0.0f, 0.0f },    /* rvec [deg] */
         { 0.0f, 8.0f, 7.0f });   /* tvec */  /* tvec is in camera coordinate, so Z is height because pitch = 90 */
     CreateTransformMat();
@@ -395,19 +395,19 @@ void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
 
 void ImageProcessor::GetCameraParameter(float& focal_length, std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec)
 {
-    focal_length = camera_real.parameter.fx();
-    camera_real.parameter.GetExtrinsic(real_rvec, real_tvec);
-    camera_top.parameter.GetExtrinsic(top_rvec, top_tvec);
+    focal_length = camera_real_.parameter.fx();
+    camera_real_.parameter.GetExtrinsic(real_rvec, real_tvec);
+    camera_top_.parameter.GetExtrinsic(top_rvec, top_tvec);
 }
 
 void ImageProcessor::SetCameraParameter(float focal_length, const std::array<float, 3>& real_rvec, const std::array<float, 3>& real_tvec, const std::array<float, 3>& top_rvec, const std::array<float, 3>& top_tvec)
 {
-    camera_real.parameter.fx() = focal_length;
-    camera_real.parameter.fy() = focal_length;
-    camera_top.parameter.fx() = focal_length;
-    camera_top.parameter.fy() = focal_length;
-    camera_real.parameter.SetExtrinsic(real_rvec, real_tvec);
-    camera_top.parameter.SetExtrinsic(top_rvec, top_tvec);
+    camera_real_.parameter.fx() = focal_length;
+    camera_real_.parameter.fy() = focal_length;
+    camera_top_.parameter.fx() = focal_length;
+    camera_top_.parameter.fy() = focal_length;
+    camera_real_.parameter.SetExtrinsic(real_rvec, real_tvec);
+    camera_top_.parameter.SetExtrinsic(top_rvec, top_tvec);
     CreateTransformMat();
 }
 
@@ -421,11 +421,11 @@ void ImageProcessor::CreateTransformMat()
         {  1.0f, 0,  3.0f },
     };
     std::vector<cv::Point2f> image_point_real_list;
-    cv::projectPoints(object_point_list, camera_real.parameter.rvec, camera_real.parameter.tvec, camera_real.parameter.K, camera_real.parameter.dist_coeff, image_point_real_list);
+    cv::projectPoints(object_point_list, camera_real_.parameter.rvec, camera_real_.parameter.tvec, camera_real_.parameter.K, camera_real_.parameter.dist_coeff, image_point_real_list);
 
     /* Convert to image points (2D) using the top view camera (virtual camera) */
     std::vector<cv::Point2f> image_point_top_list;
-    cv::projectPoints(object_point_list, camera_top.parameter.rvec, camera_top.parameter.tvec, camera_top.parameter.K, camera_top.parameter.dist_coeff, image_point_top_list);
+    cv::projectPoints(object_point_list, camera_top_.parameter.rvec, camera_top_.parameter.tvec, camera_top_.parameter.K, camera_top_.parameter.dist_coeff, image_point_top_list);
 
     mat_transform_ = cv::getPerspectiveTransform(&image_point_real_list[0], &image_point_top_list[0]);
 }
