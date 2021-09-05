@@ -175,12 +175,12 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
 
         CommonHelper::DrawText(mat_topview, track_data.bbox.label, topview_points[i], 0.35, 1, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
 
-        //auto& track_history = track.GetDataHistory();
-        //for (size_t i = 1; i < track_history.size(); i++) {
-        //    cv::Point p0(track_history[i - 1].topview.x, track_history[i - 1].topview.y);
-        //    cv::Point p1(track_history[i].topview.x, track_history[i].topview.y);
-        //    cv::line(mat_topview, p0, p1, GetColorForId(track.GetId()));
-        //}
+        auto& track_history = track.GetDataHistory();
+        for (size_t i = 1; i < track_history.size(); i++) {
+            cv::Point p0(track_history[i - 1].topview.x, track_history[i - 1].topview.y);
+            cv::Point p1(track_history[i].topview.x, track_history[i].topview.y);
+            cv::line(mat_topview, p0, p1, GetColorForId(track.GetId()));
+        }
     }
 }
 

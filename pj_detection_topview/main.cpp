@@ -35,72 +35,19 @@ limitations under the License.
 #define DEFAULT_INPUT_IMAGE           RESOURCE_DIR"/dashcam_00.jpg"
 #define LOOP_NUM_FOR_TIME_MEASUREMENT 10
 
+static constexpr char kRecordVideoFilename[] = "";  /* out.mp4 */
 static constexpr char kWindowNormal[] = "WindowNormal";
 static constexpr char kWindowTopView[] = "WindowTopView";
 static constexpr char kWindowParam[] = "WindowParam";
-static constexpr float kFovDeg = 130.0f;
 
 
 /*** Global variable ***/
 /* variables for processing time measurement */
-static double total_time_all = 0;
-static double total_time_cap = 0;
-static double total_time_image_process = 0;
 static bool is_pause = false;
 static bool is_process_one_frame = false;
 
+
 /*** Function ***/
-static int32_t loop_main(std::unique_ptr<ImageProcessorIf>& image_processor, int32_t frame_cnt, std::string& input_name, cv::VideoCapture& cap, cv::VideoWriter& writer)
-{
-    const auto& time_all0 = std::chrono::steady_clock::now();
-    /* Read image */
-    const auto& time_cap0 = std::chrono::steady_clock::now();
-    static cv::Mat mat_original;   /* to reuse image in the previous frame during pose*/
-    if (cap.isOpened()) {
-        if (!is_pause || is_process_one_frame) {
-            cap.read(mat_original);
-        }
-    } else {
-        mat_original = cv::imread(input_name);
-    }
-    if (mat_original.empty()) return -1;
-    const auto& time_cap1 = std::chrono::steady_clock::now();
-
-    /* Call image processor library */
-    const auto& time_image_process0 = std::chrono::steady_clock::now();
-    ImageProcessorIf::Result result;
-    image_processor->Process(mat_original, result);
-    const auto& time_image_process1 = std::chrono::steady_clock::now();
-
-    /* Display result */
-    if (writer.isOpened()) writer.write(result.mat_output);
-    cvui::imshow(kWindowNormal, result.mat_output);
-    cvui::imshow(kWindowTopView, result.mat_output_topview);
-
-    /* Print processing time */
-    const auto& time_all1 = std::chrono::steady_clock::now();
-    double time_all = (time_all1 - time_all0).count() / 1000000.0;
-    double time_cap = (time_cap1 - time_cap0).count() / 1000000.0;
-    double time_image_process = (time_image_process1 - time_image_process0).count() / 1000000.0;
-    printf("Total:               %9.3lf [msec]\n", time_all);
-    printf("  Capture:           %9.3lf [msec]\n", time_cap);
-    printf("  Image processing:  %9.3lf [msec]\n", time_image_process);
-    printf("    Pre processing:  %9.3lf [msec]\n", result.time_pre_process);
-    printf("    Inference:       %9.3lf [msec]\n", result.time_inference);
-    printf("    Post processing: %9.3lf [msec]\n", result.time_post_process);
-    printf("=== Finished %d frame ===\n\n", frame_cnt);
-
-    if (frame_cnt > 0) {    /* do not count the first process because it may include initialize process */
-        total_time_all += time_all;
-        total_time_cap += time_cap;
-        total_time_image_process += time_image_process;
-    }
-    return 0;
-}
-
-
-
-
 #define MAKE_GUI_SETTING_FLOAT(VAL, LABEL, STEP, FORMAT, RANGE0, RANGE1) {\
 cvui::beginColumn(-1, -1, 2);\
 double temp_double_current = static_cast<double>(VAL);\
@@ -137,16 +84,16 @@ static void loop_param(std::unique_ptr<ImageProcessorIf>& image_processor)
         MAKE_GUI_SETTING_FLOAT(f, "Focal Length", 10.0f, "%.0Lf", 0.0f, 1000.0f);
 
         cvui::text("Top Camera Parameter (Extrinsic)");
-        MAKE_GUI_SETTING_FLOAT(top_rvec[0], "Pitch", 1.0f, "%.0Lf", -90.0f, 90.0f);
-        MAKE_GUI_SETTING_FLOAT(top_rvec[1], "Yaw", 1.0f, "%.0Lf", -90.0f, 90.0f);
-        MAKE_GUI_SETTING_FLOAT(top_rvec[2], "Roll", 1.0f, "%.0Lf", -90.0f, 90.0f);
+        MAKE_GUI_SETTING_FLOAT(top_rvec[0], "Pitch", 1.0f, "%.0Lf", -100.0f, 100.0f);
+        MAKE_GUI_SETTING_FLOAT(top_rvec[1], "Yaw", 1.0f, "%.0Lf", -100.0f, 100.0f);
+        MAKE_GUI_SETTING_FLOAT(top_rvec[2], "Roll", 1.0f, "%.0Lf", -100.0f, 100.0f);
 
         cvui::text("Real Camera Parameter (Extrinsic)");
-        MAKE_GUI_SETTING_FLOAT(real_tvec[1], "Height", 1.0f, "%.0Lf", 0.0f, 5.0f);
+        MAKE_GUI_SETTING_FLOAT(real_tvec[1], "Height", 1.0f, "%.0Lf", 0.0f, 10.0f);
 
-        MAKE_GUI_SETTING_FLOAT(real_rvec[0], "Pitch", 1.0f, "%.0Lf", -90.0f, 90.0f);
-        MAKE_GUI_SETTING_FLOAT(real_rvec[1], "Yaw", 1.0f, "%.0Lf", -90.0f, 90.0f);
-        MAKE_GUI_SETTING_FLOAT(real_rvec[2], "Roll", 1.0f, "%.0Lf", -90.0f, 90.0f);
+        MAKE_GUI_SETTING_FLOAT(real_rvec[0], "Pitch", 1.0f, "%.0Lf", -100.0f, 100.0f);
+        MAKE_GUI_SETTING_FLOAT(real_rvec[1], "Yaw", 1.0f, "%.0Lf", -100.0f, 100.0f);
+        MAKE_GUI_SETTING_FLOAT(real_rvec[2], "Roll", 1.0f, "%.0Lf", -100.0f, 100.0f);
 
         image_processor->SetCameraParameter(f, real_rvec, real_tvec, top_rvec, top_tvec);
 
@@ -189,6 +136,7 @@ static void CallbackMouseMain(int32_t event, int32_t x, int32_t y, int32_t flags
 
 static void TreatKeyInputMain(std::unique_ptr<ImageProcessorIf>& image_processor, int32_t key, cv::VideoCapture& cap)
 {
+    static constexpr float kIncPosPerFrame = 0.8f;
     float f;
     std::array<float, 3> real_rvec;
     std::array<float, 3> real_tvec;
@@ -196,8 +144,8 @@ static void TreatKeyInputMain(std::unique_ptr<ImageProcessorIf>& image_processor
     std::array<float, 3> top_tvec;
     image_processor->GetCameraParameter(f, real_rvec, real_tvec, top_rvec, top_tvec);
 
+    is_process_one_frame = false;
     bool is_key_pressed = true;
-    static constexpr float kIncPosPerFrame = 0.8f;
     key &= 0xFF;
     switch (key) {
     case 'w':
@@ -279,6 +227,11 @@ static void TreatKeyInputMain(std::unique_ptr<ImageProcessorIf>& image_processor
 int main(int argc, char* argv[])
 {
     /*** Initialize ***/
+    /* For prrocess time measurement */
+    double total_time_all = 0;
+    double total_time_cap = 0;
+    double total_time_image_process = 0;
+
     /* Find source image */
     std::string input_name = (argc > 1) ? argv[1] : DEFAULT_INPUT_IMAGE;
     cv::VideoCapture cap;   /* if cap is not opened, src is still image */
@@ -288,7 +241,7 @@ int main(int argc, char* argv[])
 
     /* Create video writer to save output video */
     cv::VideoWriter writer;
-    // writer = cv::VideoWriter("out.mp4", cv::VideoWriter::fourcc('M', 'P', '4', 'V'), (std::max)(10.0, cap.get(cv::CAP_PROP_FPS)), cv::Size(static_cast<int32_t>(cap.get(cv::CAP_PROP_FRAME_WIDTH)), static_cast<int32_t>(cap.get(cv::CAP_PROP_FRAME_HEIGHT))));
+    if (kRecordVideoFilename[0] != 0) writer = cv::VideoWriter(kRecordVideoFilename, cv::VideoWriter::fourcc('M', 'P', '4', 'V'), (std::max)(10.0, cap.get(cv::CAP_PROP_FPS)), cv::Size(static_cast<int32_t>(cap.get(cv::CAP_PROP_FRAME_WIDTH)), static_cast<int32_t>(cap.get(cv::CAP_PROP_FRAME_HEIGHT))));
 
     /* Initialize image processor library */
     std::unique_ptr<ImageProcessorIf> image_processor = ImageProcessorIf::Create();
@@ -305,11 +258,56 @@ int main(int argc, char* argv[])
     cv::setMouseCallback(kWindowTopView, CallbackMouseMain, image_processor.get());
 
     /*** Process for each frame ***/
+    cv::Mat mat_original;
     int32_t frame_cnt = 0;
-    for (frame_cnt = 0; cap.isOpened() || frame_cnt < LOOP_NUM_FOR_TIME_MEASUREMENT; frame_cnt++) {
-        if (loop_main(image_processor, frame_cnt, input_name, cap, writer) < 0) break;
+    for (frame_cnt = 0; cap.isOpened() || frame_cnt < LOOP_NUM_FOR_TIME_MEASUREMENT || is_pause; frame_cnt++) {
+        const auto& time_all0 = std::chrono::steady_clock::now();
+        /* Read image */
+        const auto& time_cap0 = std::chrono::steady_clock::now();
+        if (cap.isOpened()) {
+            if (!is_pause || is_process_one_frame) {
+                cap.read(mat_original);
+            }
+        } else {
+            mat_original = cv::imread(input_name);
+        }
+        if (mat_original.empty()) break;
+        const auto& time_cap1 = std::chrono::steady_clock::now();
+
+        /* Call image processor library */
+        const auto& time_image_process0 = std::chrono::steady_clock::now();
+        ImageProcessorIf::Result result;
+        image_processor->Process(mat_original, result);
+        const auto& time_image_process1 = std::chrono::steady_clock::now();
+
+        /* Display result */
+        if (writer.isOpened()) writer.write(result.mat_output);
+        cvui::imshow(kWindowNormal, result.mat_output);
+        cvui::imshow(kWindowTopView, result.mat_output_topview);
+
+        /* Print processing time */
+        const auto& time_all1 = std::chrono::steady_clock::now();
+        double time_all = (time_all1 - time_all0).count() / 1000000.0;
+        double time_cap = (time_cap1 - time_cap0).count() / 1000000.0;
+        double time_image_process = (time_image_process1 - time_image_process0).count() / 1000000.0;
+        printf("Total:               %9.3lf [msec]\n", time_all);
+        printf("  Capture:           %9.3lf [msec]\n", time_cap);
+        printf("  Image processing:  %9.3lf [msec]\n", time_image_process);
+        printf("    Pre processing:  %9.3lf [msec]\n", result.time_pre_process);
+        printf("    Inference:       %9.3lf [msec]\n", result.time_inference);
+        printf("    Post processing: %9.3lf [msec]\n", result.time_post_process);
+        printf("=== Finished %d frame ===\n\n", frame_cnt);
+
+        if (frame_cnt > 0) {    /* do not count the first process because it may include initialize process */
+            total_time_all += time_all;
+            total_time_cap += time_cap;
+            total_time_image_process += time_image_process;
+        }
+
+        /* Parameter control window */
         loop_param(image_processor);
         
+        /* Key input */
         int32_t key = cv::waitKey(1);
         if (key == 27) break;   /* ESC to quit */
         TreatKeyInputMain(image_processor, key, cap);
