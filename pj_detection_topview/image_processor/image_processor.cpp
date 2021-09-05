@@ -37,6 +37,7 @@ limitations under the License.
 #include "detection_engine.h"
 #include "tracker.h"
 #include "lane_engine.h"
+#include "depth_engine.h"
 
 #include "image_processor_if.h"
 #include "image_processor.h"
@@ -78,6 +79,11 @@ int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_par
         return kRetErr;
     }
 
+    if (depth_engine_.Initialize(input_param.work_dir, input_param.num_threads) != DepthEngine::kRetOk) {
+        depth_engine_.Finalize();
+        return kRetErr;
+    }
+
     frame_cnt = 0;
 
     return kRetOk;
@@ -94,6 +100,10 @@ int32_t ImageProcessor::Finalize(void)
     }
 
     if (m_segmentation_engine.Finalize() != SemanticSegmentationEngine::kRetOk) {
+        return kRetErr;
+    }
+
+    if (depth_engine_.Finalize() != DepthEngine::kRetOk) {
         return kRetErr;
     }
 
@@ -135,6 +145,11 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
         return kRetErr;
     }
 
+    DepthEngine::Result depth_result;
+    if (depth_engine_.Process(mat_original, depth_result) != DepthEngine::kRetOk) {
+        return -1;
+    }
+
     /*** Create Mat for output ***/
     cv::Mat mat = mat_original.clone();
     cv::Mat mat_depth;
@@ -150,6 +165,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
 
     DrawLaneDetection(mat, mat_topview, lane_result);
     DrawObjectDetection(mat, mat_topview, det_result);
+    DrawDepth(mat_depth, depth_result);
 
     /*** Draw statistics ***/
     CommonHelper::DrawText(mat, "DET: " + std::to_string(det_result.bbox_list.size()) + ", TRACK: " + std::to_string(m_tracker.GetTrackList().size()), cv::Point(0, 20), 0.7, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
@@ -168,6 +184,27 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     result.time_post_process = det_result.time_post_process;
 
     return kRetOk;
+}
+
+
+void ImageProcessor::DrawDepth(cv::Mat& mat, const DepthEngine::Result& depth_result)
+{
+    float scale_w = static_cast<float>(depth_result.mat_out.cols) / depth_result.crop.w;
+    float scale_h = static_cast<float>(depth_result.mat_out.rows) / depth_result.crop.h;
+    cv::Rect crop = cv::Rect(depth_result.crop.x, depth_result.crop.y, depth_result.crop.w, depth_result.crop.h);
+    if (crop.x < 0) {
+        crop.x *= -1;
+        crop.width -= 2 * crop.x;
+    }
+    if (crop.y < 0) {
+        crop.y *= -1;
+        crop.height -= 2 * crop.y;
+    }
+    crop.x *= scale_w;
+    crop.width *= scale_w;
+    crop.y *= scale_h;
+    crop.height *= scale_h;
+    cv::applyColorMap(depth_result.mat_out(crop), mat, cv::COLORMAP_JET);
 }
 
 void ImageProcessor::DrawSegmentation(cv::Mat& mat_segmentation, const SemanticSegmentationEngine::Result& segmentation_result)

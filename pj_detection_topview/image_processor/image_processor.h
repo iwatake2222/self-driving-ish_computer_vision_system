@@ -32,6 +32,7 @@ limitations under the License.
 #include "tracker.h"
 #include "lane_engine.h"
 #include "semantic_segmentation_engine.h"
+#include "depth_engine.h"
 
 namespace cv {
     class Mat;
@@ -61,6 +62,7 @@ private:
     void DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, const DetectionEngine::Result& det_result);
     void DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const LaneEngine::Result& lane_result);
     void DrawSegmentation(cv::Mat& mat_segmentation, const SemanticSegmentationEngine::Result& segmentation_result);
+    void DrawDepth(cv::Mat& mat, const DepthEngine::Result& depth_result);
 
 
 private:
@@ -73,6 +75,7 @@ private:
     Tracker m_tracker;
     LaneEngine m_lane_engine;
     SemanticSegmentationEngine m_segmentation_engine;
+    DepthEngine depth_engine_;
 
 };
 
