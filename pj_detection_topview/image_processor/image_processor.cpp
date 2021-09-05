@@ -47,6 +47,8 @@ limitations under the License.
 #define PRINT(...)   COMMON_HELPER_PRINT(TAG, __VA_ARGS__)
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
+#define COLOR_BG  CommonHelper::CreateCvColor(70, 70, 70)
+
 /*** Global variable ***/
 
 /*** Function ***/
@@ -66,8 +68,13 @@ int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_par
         return kRetErr;
     }
 
-    if (m_lane_engine.Initialize(input_param.work_dir, input_param.num_threads) != DetectionEngine::kRetOk) {
+    if (m_lane_engine.Initialize(input_param.work_dir, input_param.num_threads) != LaneEngine::kRetOk) {
         m_lane_engine.Finalize();
+        return kRetErr;
+    }
+
+    if (m_segmentation_engine.Initialize(input_param.work_dir, input_param.num_threads) != SemanticSegmentationEngine::kRetOk) {
+        m_segmentation_engine.Finalize();
         return kRetErr;
     }
 
@@ -82,7 +89,11 @@ int32_t ImageProcessor::Finalize(void)
         return kRetErr;
     }
 
-    if (m_lane_engine.Finalize() != DetectionEngine::kRetOk) {
+    if (m_lane_engine.Finalize() != LaneEngine::kRetOk) {
+        return kRetErr;
+    }
+
+    if (m_segmentation_engine.Finalize() != SemanticSegmentationEngine::kRetOk) {
         return kRetErr;
     }
 
@@ -115,17 +126,28 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     m_tracker.Update(det_result.bbox_list);
 
     LaneEngine::Result lane_result;
-    if (m_lane_engine.Process(mat_original, lane_result) != DetectionEngine::kRetOk) {
+    if (m_lane_engine.Process(mat_original, lane_result) != LaneEngine::kRetOk) {
+        return kRetErr;
+    }
+
+    SemanticSegmentationEngine::Result segmentation_result;
+    if (m_segmentation_engine.Process(mat_original, segmentation_result) != SemanticSegmentationEngine::kRetOk) {
         return kRetErr;
     }
 
     /*** Create Mat for output ***/
     cv::Mat mat = mat_original.clone();
+    cv::Mat mat_depth;
+    cv::Mat mat_segmentation;
     cv::Mat mat_topview;
-    CreateTopViewMat(mat_original, mat_topview);
-    
+    //CreateTopViewMat(mat_original, mat_topview);
 
     /*** Draw result ***/
+    DrawSegmentation(mat_segmentation, segmentation_result);
+    cv::resize(mat_segmentation, mat_segmentation, mat.size());
+    //cv::add(mat_segmentation, mat, mat);
+    CreateTopViewMat(mat_segmentation, mat_topview);
+
     DrawLaneDetection(mat, mat_topview, lane_result);
     DrawObjectDetection(mat, mat_topview, det_result);
 
@@ -138,6 +160,8 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
 
     /*** Return the results ***/
     result.mat_output = mat;
+    result.mat_output_segmentation = mat_segmentation;
+    result.mat_output_depth = mat_depth;
     result.mat_output_topview = mat_topview;
     result.time_pre_process = det_result.time_pre_process;
     result.time_inference = det_result.time_inference;
@@ -146,6 +170,25 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     return kRetOk;
 }
 
+void ImageProcessor::DrawSegmentation(cv::Mat& mat_segmentation, const SemanticSegmentationEngine::Result& segmentation_result)
+{
+    /* Draw on NormalView */
+    std::vector<cv::Mat> mat_segmentation_list(4, cv::Mat());
+#pragma omp parallel for
+    for (int32_t i = 0; i < segmentation_result.image_list.size(); i++) {
+        cv::Mat mat_fp32_3;
+        cv::cvtColor(segmentation_result.image_list[i], mat_fp32_3, cv::COLOR_GRAY2BGR); /* 1channel -> 3 channel */
+        cv::multiply(mat_fp32_3, GetColorForSegmentation(i), mat_fp32_3);
+        mat_fp32_3.convertTo(mat_fp32_3, CV_8UC3, 1, 0);
+        mat_segmentation_list[i] = mat_fp32_3;
+    }
+
+//#pragma omp parallel for  /* don't use */
+    mat_segmentation = cv::Mat::zeros(mat_segmentation_list[0].size(), CV_8UC3);
+    for (int32_t i = 0; i < mat_segmentation_list.size(); i++) {
+        cv::add(mat_segmentation, mat_segmentation_list[i], mat_segmentation);
+    }
+}
 
 void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const LaneEngine::Result& lane_result)
 {
@@ -270,15 +313,32 @@ cv::Scalar ImageProcessor::GetColorForId(int32_t id)
 
 cv::Scalar ImageProcessor::GetColorForLine(int32_t id)
 {
-    static constexpr int32_t kMaxNum = 4;
-    static std::vector<cv::Scalar> color_list;
-    if (color_list.empty()) {
-        std::srand(123456);
-        for (int32_t i = 0; i < kMaxNum; i++) {
-            color_list.push_back(CommonHelper::CreateCvColor(std::rand() % 255, std::rand() % 255, std::rand() % 255));
-        }
+    switch (id) {
+    default:
+    case 0:
+        return CommonHelper::CreateCvColor(255, 255, 0);
+    case 1:
+        return CommonHelper::CreateCvColor(0, 255, 255);
+    case 2:
+        return CommonHelper::CreateCvColor(0, 255, 255);
+    case 3:
+        return CommonHelper::CreateCvColor(255, 255, 0);
     }
-    return color_list[id % kMaxNum];
+}
+
+cv::Scalar ImageProcessor::GetColorForSegmentation(int32_t id)
+{
+    switch (id) {
+    default:
+    case 0: /* BG */
+        return COLOR_BG;
+    case 1: /* road */
+        return CommonHelper::CreateCvColor(255, 0, 0);
+    case 2: /* curbs */
+        return CommonHelper::CreateCvColor(0, 255, 0);
+    case 3: /* marks */
+        return CommonHelper::CreateCvColor(0, 0, 255);
+    }
 }
 
 void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
@@ -336,7 +396,7 @@ void ImageProcessor::CreateTransformMat()
 void ImageProcessor::CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_topview)
 {
     /* Perspective Transform */   
-    mat_topview = cv::Mat(mat_original.size(), CV_8UC3, cv::Scalar(70, 70, 70));
+    mat_topview = cv::Mat(mat_original.size(), CV_8UC3, COLOR_BG);
     cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
     //mat_topview = mat_topview(cv::Rect(0, 360, 1280, 360));
 }

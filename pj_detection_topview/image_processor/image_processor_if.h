@@ -37,6 +37,8 @@ public:
 
     typedef struct {
         cv::Mat mat_output;
+        cv::Mat mat_output_segmentation;
+        cv::Mat mat_output_depth;
         cv::Mat mat_output_topview;
         double time_pre_process;   // [msec]
         double time_inference;    // [msec]

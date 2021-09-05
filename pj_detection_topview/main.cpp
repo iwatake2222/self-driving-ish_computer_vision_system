@@ -38,6 +38,8 @@ limitations under the License.
 static constexpr char kRecordVideoFilename[] = "";  /* out.mp4 */
 static constexpr char kWindowNormal[] = "WindowNormal";
 static constexpr char kWindowTopView[] = "WindowTopView";
+static constexpr char kWindowSegmentation[] = "WindowSegmentation";
+static constexpr char kWindowDepth[] = "WindowDepth";
 static constexpr char kWindowParam[] = "WindowParam";
 
 
@@ -254,6 +256,8 @@ int main(int argc, char* argv[])
     /* Initialize cvui */
     cvui::init(kWindowNormal);
     cvui::init(kWindowTopView);
+    cvui::init(kWindowSegmentation);
+    cvui::init(kWindowDepth);
     cvui::init(kWindowParam);
     cv::setMouseCallback(kWindowTopView, CallbackMouseMain, image_processor.get());
 
@@ -283,7 +287,9 @@ int main(int argc, char* argv[])
         /* Display result */
         if (writer.isOpened()) writer.write(result.mat_output);
         cvui::imshow(kWindowNormal, result.mat_output);
-        cvui::imshow(kWindowTopView, result.mat_output_topview);
+        if (!result.mat_output_topview.empty()) cvui::imshow(kWindowTopView, result.mat_output_topview);
+        if (!result.mat_output_segmentation.empty()) cvui::imshow(kWindowSegmentation, result.mat_output_segmentation);
+        if (!result.mat_output_depth.empty()) cvui::imshow(kWindowDepth, result.mat_output_depth);
 
         /* Print processing time */
         const auto& time_all1 = std::chrono::steady_clock::now();
