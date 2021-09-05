@@ -27,9 +27,10 @@ limitations under the License.
 
 /* for My modules */
 #include "image_processor_if.h"
+#include "camera_model.h"
 #include "detection_engine.h"
 #include "tracker.h"
-#include "camera_model.h"
+#include "lane_engine.h"
 
 namespace cv {
     class Mat;
@@ -51,19 +52,24 @@ public:
 private:
     void DrawFps(cv::Mat& mat, double time_inference, cv::Point pos, double font_scale, int32_t thickness, cv::Scalar color_front, cv::Scalar color_back, bool is_text_on_rect = true);
     cv::Scalar GetColorForId(int32_t id);
-    int32_t ProcessObjectDetection(const cv::Mat& mat_original, DetectionEngine::Result& det_result);
-    void DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, const DetectionEngine::Result& det_result);
+    cv::Scalar GetColorForLine(int32_t id);
     void CreateTransformMat();
     void CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_topview);
+
+    void DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, const DetectionEngine::Result& det_result);
+    void DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const LaneEngine::Result& lane_result);
 
 
 private:
     int32_t frame_cnt;
-    DetectionEngine m_detection_engine;
-    Tracker m_tracker;
     CameraModel camera_real;
     CameraModel camera_top;
     cv::Mat mat_transform_;
+
+    DetectionEngine m_detection_engine;
+    Tracker m_tracker;
+    LaneEngine m_lane_engine;
+
 };
 
 #endif

@@ -5,6 +5,7 @@ set(LibraryName "detection_topview_core")
 # Create library
 add_library (${LibraryName} image_processor.cpp image_processor.h image_processor_if.cpp image_processor_if.h
     detection_engine.cpp detection_engine.h
+    lane_engine.cpp lane_engine.h
 )
 
 # OpenCV

@@ -32,9 +32,11 @@ limitations under the License.
 /* for My modules */
 #include "common_helper.h"
 #include "common_helper_cv.h"
+#include "camera_model.h"
 #include "bounding_box.h"
 #include "detection_engine.h"
 #include "tracker.h"
+#include "lane_engine.h"
 
 #include "image_processor_if.h"
 #include "image_processor.h"
@@ -64,6 +66,11 @@ int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_par
         return kRetErr;
     }
 
+    if (m_lane_engine.Initialize(input_param.work_dir, input_param.num_threads) != DetectionEngine::kRetOk) {
+        m_lane_engine.Finalize();
+        return kRetErr;
+    }
+
     frame_cnt = 0;
 
     return kRetOk;
@@ -74,6 +81,11 @@ int32_t ImageProcessor::Finalize(void)
     if (m_detection_engine.Finalize() != DetectionEngine::kRetOk) {
         return kRetErr;
     }
+
+    if (m_lane_engine.Finalize() != DetectionEngine::kRetOk) {
+        return kRetErr;
+    }
+
     return kRetOk;
 }
 
@@ -90,25 +102,31 @@ int32_t ImageProcessor::Command(int32_t cmd)
 
 int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::Result& result)
 {
-    /*** Create Mat for output ***/
-    cv::Mat mat = mat_original.clone();
-
+    /*** Initialize internal parameters using input image information ***/
     if (frame_cnt == 0) {
         ResetCamera(mat_original.cols, mat_original.rows, 130.0f);
     }
+
+    /*** Run inference ***/
+    DetectionEngine::Result det_result;
+    if (m_detection_engine.Process(mat_original, det_result) != DetectionEngine::kRetOk) {
+        return kRetErr;
+    }
+    m_tracker.Update(det_result.bbox_list);
+
+    LaneEngine::Result lane_result;
+    if (m_lane_engine.Process(mat_original, lane_result) != DetectionEngine::kRetOk) {
+        return kRetErr;
+    }
+
+    /*** Create Mat for output ***/
+    cv::Mat mat = mat_original.clone();
     cv::Mat mat_topview;
     CreateTopViewMat(mat_original, mat_topview);
     
 
-    /*** Semantic Segmentation ***/
-    /* todo */
-
-    /*** Lane Detection ***/
-    /* todo */
-
-    /*** Object Detection ***/
-    DetectionEngine::Result det_result;
-    ProcessObjectDetection(mat_original, det_result);
+    /*** Draw result ***/
+    DrawLaneDetection(mat, mat_topview, lane_result);
     DrawObjectDetection(mat, mat_topview, det_result);
 
     /*** Draw statistics ***/
@@ -126,6 +144,48 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     result.time_post_process = det_result.time_post_process;
 
     return kRetOk;
+}
+
+
+void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const LaneEngine::Result& lane_result)
+{
+    /* Draw on NormalView */
+    for (int32_t line_index = 0; line_index < lane_result.line_list.size(); line_index++) {
+        const auto& line = lane_result.line_list[line_index];
+        for (int32_t i = 1; i < line.size(); i++) {
+            const auto& p0 = line[i - 1];
+            const auto& p1 = line[i];
+            cv::line(mat, cv::Point(p0.first, p0.second), cv::Point(p1.first, p1.second), GetColorForLine(line_index), 2);
+        }
+    }
+
+    /* Draw on TopView*/
+    std::vector <std::vector<cv::Point2f>> normal_points;
+    std::vector <std::vector<cv::Point2f>> topview_points;
+    for (int32_t line_index = 0; line_index < lane_result.line_list.size(); line_index++) {
+        std::vector<cv::Point2f> normal_line;
+        const auto& line = lane_result.line_list[line_index];
+        for (const auto& p : line) {
+            normal_line.push_back({ static_cast<float>(p.first), static_cast<float>(p.second) });
+        }
+        normal_points.push_back(normal_line);
+    }
+    for (int32_t line_index = 0; line_index < lane_result.line_list.size(); line_index++) {
+        std::vector<cv::Point2f> topview_line;
+        if (normal_points[line_index].size() > 0) {
+            cv::perspectiveTransform(normal_points[line_index], topview_line, mat_transform_);
+        }
+        topview_points.push_back(topview_line);
+    }
+
+    for (int32_t line_index = 0; line_index < topview_points.size(); line_index++) {
+        const auto& line = topview_points[line_index];
+        for (int32_t i = 1; i < line.size(); i++) {
+            const auto& p0 = line[i - 1];
+            const auto& p1 = line[i];
+            cv::line(mat_topview, line[i - 1], line[i], GetColorForLine(line_index), 2);
+        }
+    }
 }
 
 void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, const DetectionEngine::Result& det_result)
@@ -184,15 +244,6 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
     }
 }
 
-int32_t ImageProcessor::ProcessObjectDetection(const cv::Mat& mat_original, DetectionEngine::Result& det_result)
-{
-    if (m_detection_engine.Process(mat_original, det_result) != DetectionEngine::kRetOk) {
-        return kRetErr;
-    }
-    m_tracker.Update(det_result.bbox_list);
-    return kRetOk;
-}
-
 void ImageProcessor::DrawFps(cv::Mat& mat, double time_inference, cv::Point pos, double font_scale, int32_t thickness, cv::Scalar color_front, cv::Scalar color_back, bool is_text_on_rect)
 {
     char text[64];
@@ -210,6 +261,19 @@ cv::Scalar ImageProcessor::GetColorForId(int32_t id)
     static std::vector<cv::Scalar> color_list;
     if (color_list.empty()) {
         std::srand(123);
+        for (int32_t i = 0; i < kMaxNum; i++) {
+            color_list.push_back(CommonHelper::CreateCvColor(std::rand() % 255, std::rand() % 255, std::rand() % 255));
+        }
+    }
+    return color_list[id % kMaxNum];
+}
+
+cv::Scalar ImageProcessor::GetColorForLine(int32_t id)
+{
+    static constexpr int32_t kMaxNum = 4;
+    static std::vector<cv::Scalar> color_list;
+    if (color_list.empty()) {
+        std::srand(123456);
         for (int32_t i = 0; i < kMaxNum; i++) {
             color_list.push_back(CommonHelper::CreateCvColor(std::rand() % 255, std::rand() % 255, std::rand() % 255));
         }
