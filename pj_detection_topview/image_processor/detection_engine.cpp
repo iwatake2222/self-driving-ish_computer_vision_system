@@ -40,8 +40,11 @@ limitations under the License.
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 /* Model parameters */
+#if defined(ENABLE_TENSORRT)
+#define MODEL_TYPE_ONNX
+#else
 #define MODEL_TYPE_TFLITE
-//#define MODEL_TYPE_ONNX
+#endif
 
 #if defined(MODEL_TYPE_TFLITE)
 #define MODEL_NAME  "yolox_nano_480x640.tflite"
@@ -101,7 +104,7 @@ int32_t DetectionEngine::Initialize(const std::string& work_dir, const int32_t n
     //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteEdgetpu));
     //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteNnapi));
 #elif defined(MODEL_TYPE_ONNX)
-    inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kOpencv));
+    inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorrt));
 #endif
 
     if (!inference_helper_) {

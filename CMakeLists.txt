@@ -4,6 +4,13 @@ cmake_minimum_required(VERSION 3.0)
 set(ProjectName "detection_topview")
 project(${ProjectName})
 
+# Option
+set(ENABLE_TENSORRT off CACHE BOOL "ENABLE_TENSORRT? [on/off]")
+if(ENABLE_TENSORRT)
+    set(INFERENCE_HELPER_ENABLE_TENSORRT ON CACHE BOOL "INFERENCE_HELPER_ENABLE_TENSORRT" FORCE)
+    add_definitions(-DENABLE_TENSORRT)
+endif()
+
 # Copy resouce
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/resource DESTINATION ${CMAKE_BINARY_DIR}/)
 add_definitions(-DRESOURCE_DIR="${CMAKE_BINARY_DIR}/resource/")

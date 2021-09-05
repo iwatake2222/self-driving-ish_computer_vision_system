@@ -40,6 +40,14 @@ limitations under the License.
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 /* Model parameters */
+#if defined(ENABLE_TENSORRT)
+#define MODEL_TYPE_ONNX
+#else
+#define MODEL_TYPE_TFLITE
+#endif
+
+#if defined(MODEL_TYPE_TFLITE)
+#if 0
 #define MODEL_NAME  "lite-model_midas_v2_1_small_1_lite_1.tflite"
 #define INPUT_NAME  "Const"
 #define INPUT_DIMS  { 1, 256, 256, 3 }
@@ -47,6 +55,25 @@ limitations under the License.
 #define IS_RGB      true
 #define OUTPUT_NAME "midas_net_custom/sequential/re_lu_9/Relu"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
+#else
+/* https://github.com/PINTO0309/PINTO_model_zoo/blob/main/081_MiDaS_v2/download_256x256.sh */
+#define MODEL_NAME  "midasv2_small_256x256.tflite"
+#define INPUT_NAME  "0"
+#define INPUT_DIMS  { 1, 256, 256, 3 }
+#define IS_NCHW     false
+#define IS_RGB      true
+#define OUTPUT_NAME "Identity"
+#define TENSORTYPE  TensorInfo::kTensorTypeFp32
+#endif
+#elif defined(MODEL_TYPE_ONNX)
+#define MODEL_NAME  "midasv2_small_256x256.onnx"
+#define INPUT_NAME  "inputs:0"
+#define INPUT_DIMS  { 1, 256, 256, 3 }
+#define IS_NCHW     false
+#define IS_RGB      true
+#define OUTPUT_NAME "Identity:0"
+#define TENSORTYPE  TensorInfo::kTensorTypeFp32
+#endif
 
 /*** Function ***/
 int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_threads)
@@ -72,11 +99,16 @@ int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_t
     output_tensor_info_list_.push_back(OutputTensorInfo(OUTPUT_NAME, TENSORTYPE));
 
     /* Create and Initialize Inference Helper */
-    inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLite));
-    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteEdgetpu));
+#if defined(MODEL_TYPE_TFLITE)
+    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLite));
+    inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteXnnpack));
     //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteGpu));
-    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteXnnpack));
+    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteEdgetpu));
     //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteNnapi));
+#elif defined(MODEL_TYPE_ONNX)
+    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kOpencv));
+    inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorrt));
+#endif
 
     if (!inference_helper_) {
         return kRetErr;

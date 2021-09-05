@@ -41,8 +41,13 @@ limitations under the License.
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 /* Model parameters */
-#define USE_TFLITE
-#ifdef USE_TFLITE
+#if defined(ENABLE_TENSORRT)
+#define MODEL_TYPE_ONNX
+#else
+#define MODEL_TYPE_TFLITE
+#endif
+
+#ifdef MODEL_TYPE_TFLITE
 #define MODEL_NAME  "ultra_fast_lane_detection_culane_288x800.tflite"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
 #define INPUT_NAME  "input_1"
@@ -50,7 +55,7 @@ limitations under the License.
 #define IS_NCHW     false
 #define IS_RGB      true
 #define OUTPUT_NAME "Identity"
-#else
+#elif defined(MODEL_TYPE_ONNX)
 #define MODEL_NAME  "ultra_fast_lane_detection_culane_288x800.onnx"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
 #define INPUT_NAME  "input.1"
@@ -107,14 +112,13 @@ int32_t LaneEngine::Initialize(const std::string& work_dir, const int32_t num_th
     output_tensor_info_list_.push_back(OutputTensorInfo(OUTPUT_NAME, TENSORTYPE));
 
     /* Create and Initialize Inference Helper */
-#ifdef USE_TFLITE
+#if defined(MODEL_TYPE_TFLITE)
     //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLite));
     inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteXnnpack));
-    // inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteGpu));
-    // inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteEdgetpu));
-    // inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteNnapi));
-#else
-    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kOpencv));
+    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteGpu));
+    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteEdgetpu));
+    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteNnapi));
+#elif defined(MODEL_TYPE_ONNX)
     inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorrt));
 #endif
 
