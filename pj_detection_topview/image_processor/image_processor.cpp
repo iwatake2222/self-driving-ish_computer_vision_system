@@ -56,7 +56,7 @@ limitations under the License.
 ImageProcessor::ImageProcessor()
 {
     frame_cnt_ = 0;
-    vanishment_y = 1280 / 2;
+    vanishment_y_ = 1280 / 2;
 }
 
 ImageProcessor::~ImageProcessor()
@@ -86,7 +86,7 @@ int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_par
     }
 
     frame_cnt_ = 0;
-    vanishment_y = 1280 / 2;
+    vanishment_y_ = 1280 / 2;
 
     return kRetOk;
 }
@@ -127,7 +127,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
 {
     /*** Initialize internal parameters using input image information ***/
     if (frame_cnt_ == 0) {
-        ResetCamera(mat_original.cols, mat_original.rows, 130.0f);
+        ResetCamera(mat_original.cols, mat_original.rows);
     }
 
     /*** Run inference ***/
@@ -165,7 +165,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     cv::resize(mat_segmentation, mat_segmentation, mat.size());
     //cv::add(mat_segmentation, mat, mat);
     CreateTopViewMat(mat_segmentation, mat_topview);
-    mat_segmentation = mat_segmentation(cv::Rect(0, vanishment_y, mat_segmentation.cols, mat_segmentation.rows - vanishment_y));
+    mat_segmentation = mat_segmentation(cv::Rect(0, vanishment_y_, mat_segmentation.cols, mat_segmentation.rows - vanishment_y_));
 
     DrawLaneDetection(mat, mat_topview, lane_result);
     DrawObjectDetection(mat, mat_topview, det_result);
@@ -293,6 +293,7 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
 
         cv::Point3f object_point;
         camera_real_.ProjectImage2GroundPlane(cv::Point2f(bbox.x + bbox.w / 2.0f, bbox.y + bbox.h + 0.0f), object_point);
+        if (bbox.y + bbox.h + 0.0f < vanishment_y_) object_point.z = 999;
         char text[32];
         snprintf(text, sizeof(text), "%s:%.1f,%.1f[m]", bbox.label.c_str(), object_point.x, object_point.z);
         CommonHelper::DrawText(mat, text, cv::Point(bbox.x, bbox.y - 13), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
@@ -408,7 +409,7 @@ void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
         { 90.0f, 0.0f, 0.0f },    /* rvec [deg] */
         { 0.0f, 8.0f, 7.0f });   /* tvec */  /* tvec is in camera coordinate, so Z is height because pitch = 90 */
     CreateTransformMat();
-    vanishment_y = camera_real_.EstimateVanishmentY();
+    vanishment_y_ = std::max(0, std::min(height, camera_real_.EstimateVanishmentY()));
 }
 
 void ImageProcessor::GetCameraParameter(float& focal_length, std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec)
@@ -427,7 +428,7 @@ void ImageProcessor::SetCameraParameter(float focal_length, const std::array<flo
     camera_real_.parameter.SetExtrinsic(real_rvec, real_tvec);
     camera_top_.parameter.SetExtrinsic(top_rvec, top_tvec);
     CreateTransformMat();
-    vanishment_y = camera_real_.EstimateVanishmentY();
+    vanishment_y_ = std::max(0, std::min(camera_real_.parameter.height, camera_real_.EstimateVanishmentY()));
 }
 
 void ImageProcessor::CreateTransformMat()

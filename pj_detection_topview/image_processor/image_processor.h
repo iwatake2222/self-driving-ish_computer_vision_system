@@ -47,7 +47,7 @@ public:
     int32_t Finalize(void) override;
     int32_t Command(int32_t cmd) override;
 
-    void ResetCamera(int32_t width = 0, int32_t height = 0, float fov_deg = 0) override;
+    void ResetCamera(int32_t width = 0, int32_t height = 0, float fov_deg = 130.0f) override;
     void GetCameraParameter(float& focal_length, std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec) override;
     void SetCameraParameter(float focal_length, const std::array<float, 3>& real_rvec, const std::array<float, 3>& real_tvec, const std::array<float, 3>& top_rvec, const std::array<float, 3>& top_tvec) override;
 
@@ -70,7 +70,7 @@ private:
     CameraModel camera_real_;
     CameraModel camera_top_;
     cv::Mat mat_transform_;
-    int32_t vanishment_y;
+    int32_t vanishment_y_;
 
     DetectionEngine detection_engine_;
     Tracker tracker_;

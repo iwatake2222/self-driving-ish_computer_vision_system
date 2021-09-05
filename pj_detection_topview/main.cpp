@@ -271,6 +271,7 @@ int main(int argc, char* argv[])
         if (cap.isOpened()) {
             if (!is_pause || is_process_one_frame) {
                 cap.read(mat_original);
+                cv::resize(mat_original, mat_original, cv::Size(), 0.8, 0.8);
             }
         } else {
             mat_original = cv::imread(input_name);
