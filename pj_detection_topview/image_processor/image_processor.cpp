@@ -160,6 +160,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     //CreateTopViewMat(mat_original, mat_topview);
 
     /*** Draw result ***/
+    const auto& time_draw0 = std::chrono::steady_clock::now();
     DrawSegmentation(mat_segmentation, segmentation_result);
     cv::resize(mat_segmentation, mat_segmentation, mat.size());
     //cv::add(mat_segmentation, mat, mat);
@@ -169,10 +170,13 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     DrawLaneDetection(mat, mat_topview, lane_result);
     DrawObjectDetection(mat, mat_topview, det_result);
     DrawDepth(mat_depth, depth_result);
+    const auto& time_draw1 = std::chrono::steady_clock::now();
 
     /*** Draw statistics ***/
+    double time_draw = (time_draw1 - time_draw0).count() / 1000000.0;
+    double time_inference = det_result.time_inference + lane_result.time_inference + segmentation_result.time_inference + depth_result.time_inference;
     CommonHelper::DrawText(mat, "DET: " + std::to_string(det_result.bbox_list.size()) + ", TRACK: " + std::to_string(tracker_.GetTrackList().size()), cv::Point(0, 20), 0.7, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
-    DrawFps(mat, det_result.time_inference, cv::Point(0, 0), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(180, 180, 180), true);
+    DrawFps(mat, time_inference, time_draw, cv::Point(0, 0), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(180, 180, 180), true);
 
     /*** Update internal status ***/
     frame_cnt_++;
@@ -182,9 +186,9 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     result.mat_output_segmentation = mat_segmentation;
     result.mat_output_depth = mat_depth;
     result.mat_output_topview = mat_topview;
-    result.time_pre_process = det_result.time_pre_process;
-    result.time_inference = det_result.time_inference;
-    result.time_post_process = det_result.time_post_process;
+    result.time_pre_process = det_result.time_pre_process + lane_result.time_pre_process + segmentation_result.time_pre_process + depth_result.time_pre_process;
+    result.time_inference = det_result.time_inference + lane_result.time_inference + segmentation_result.time_inference + depth_result.time_inference;
+    result.time_post_process = det_result.time_post_process + lane_result.time_post_process + segmentation_result.time_post_process + depth_result.time_post_process;
 
     return kRetOk;
 }
@@ -288,9 +292,9 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
         cv::rectangle(mat, cv::Rect(bbox.x, bbox.y, bbox.w, bbox.h), color, 2);
 
         cv::Point3f object_point;
-        camera_real_.ProjectImage2GroundPlane(cv::Point2f(bbox.x + bbox.w / 2, bbox.y + bbox.h), object_point);
+        camera_real_.ProjectImage2GroundPlane(cv::Point2f(bbox.x + bbox.w / 2.0f, bbox.y + bbox.h + 0.0f), object_point);
         char text[32];
-        snprintf(text, sizeof(text), "%s: %.1f,%.1f[m]", bbox.label, object_point.x, object_point.z);
+        snprintf(text, sizeof(text), "%s:%.1f,%.1f[m]", bbox.label.c_str(), object_point.x, object_point.z);
         CommonHelper::DrawText(mat, text, cv::Point(bbox.x, bbox.y - 13), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
 
         //auto& track_history = track.GetDataHistory();
@@ -325,7 +329,7 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
         cv::Point3f object_point;
         camera_real_.ProjectImage2GroundPlane(topview_points[i], object_point);
         char text[32];
-        snprintf(text, sizeof(text), "%s: %.1f,%.1f[m]", track_data.bbox.label, object_point.x, object_point.z);
+        snprintf(text, sizeof(text), "%s:%.1f,%.1f[m]", track_data.bbox.label.c_str(), object_point.x, object_point.z);
         CommonHelper::DrawText(mat_topview, text, topview_points[i], 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
 
         //auto& track_history = track.GetDataHistory();
@@ -337,14 +341,14 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
     }
 }
 
-void ImageProcessor::DrawFps(cv::Mat& mat, double time_inference, cv::Point pos, double font_scale, int32_t thickness, cv::Scalar color_front, cv::Scalar color_back, bool is_text_on_rect)
+void ImageProcessor::DrawFps(cv::Mat& mat, double time_inference, double time_draw, cv::Point pos, double font_scale, int32_t thickness, cv::Scalar color_front, cv::Scalar color_back, bool is_text_on_rect)
 {
     char text[64];
     static auto time_previous = std::chrono::steady_clock::now();
     auto time_now = std::chrono::steady_clock::now();
     double fps = 1e9 / (time_now - time_previous).count();
     time_previous = time_now;
-    snprintf(text, sizeof(text), "FPS: %.1f, Inference: %.1f [ms]", fps, time_inference);
+    snprintf(text, sizeof(text), "FPS: %.1f, Inference: %.1f [ms], Draw: %.1f [ms]", fps, time_inference, time_draw);
     CommonHelper::DrawText(mat, text, cv::Point(0, 0), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(180, 180, 180), true);
 }
 

@@ -52,7 +52,7 @@ public:
     void SetCameraParameter(float focal_length, const std::array<float, 3>& real_rvec, const std::array<float, 3>& real_tvec, const std::array<float, 3>& top_rvec, const std::array<float, 3>& top_tvec) override;
 
 private:
-    void DrawFps(cv::Mat& mat, double time_inference, cv::Point pos, double font_scale, int32_t thickness, cv::Scalar color_front, cv::Scalar color_back, bool is_text_on_rect = true);
+    void DrawFps(cv::Mat& mat, double time_inference, double time_draw, cv::Point pos, double font_scale, int32_t thickness, cv::Scalar color_front, cv::Scalar color_back, bool is_text_on_rect = true);
     cv::Scalar GetColorForId(int32_t id);
     cv::Scalar GetColorForLine(int32_t id);
     cv::Scalar GetColorForSegmentation(int32_t id);
