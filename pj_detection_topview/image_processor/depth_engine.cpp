@@ -183,7 +183,7 @@ int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
     /* Retrieve the result */
     int32_t output_height = output_tensor_info_list_[0].tensor_dims[1];
     int32_t output_width = output_tensor_info_list_[0].tensor_dims[2];
-    int32_t output_channel = output_tensor_info_list_[0].tensor_dims[3];
+    int32_t output_channel = 1;
     float* values = output_tensor_info_list_[0].GetDataAsFloat();
     //printf("%f, %f, %f\n", values[0], values[100], values[400]);
     cv::Mat mat_out = cv::Mat(output_height, output_width, CV_32FC1, values);  /* value has no specific range */

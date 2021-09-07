@@ -33,6 +33,7 @@ limitations under the License.
 #include "common_helper.h"
 #include "common_helper_cv.h"
 #include "camera_model.h"
+#include "curve_fitting.h"
 #include "bounding_box.h"
 #include "detection_engine.h"
 #include "tracker.h"
@@ -236,17 +237,16 @@ void ImageProcessor::DrawSegmentation(cv::Mat& mat_segmentation, const SemanticS
 
 void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const LaneEngine::Result& lane_result)
 {
-    /* Draw on NormalView */
+    /*** Draw on NormalView ***/
     for (int32_t line_index = 0; line_index < lane_result.line_list.size(); line_index++) {
         const auto& line = lane_result.line_list[line_index];
-        for (int32_t i = 1; i < line.size(); i++) {
-            const auto& p0 = line[i - 1];
-            const auto& p1 = line[i];
-            cv::line(mat, cv::Point(p0.first, p0.second), cv::Point(p1.first, p1.second), GetColorForLine(line_index), 2);
+        for (const auto& p : line) {
+            cv::circle(mat, cv::Point(p.first, p.second), 5, GetColorForLine(line_index), 2);
         }
     }
 
-    /* Draw on TopView*/
+    /*** Draw on TopView ***/
+    /* normal -> topview */
     std::vector <std::vector<cv::Point2f>> normal_points;
     std::vector <std::vector<cv::Point2f>> topview_points;
     for (int32_t line_index = 0; line_index < lane_result.line_list.size(); line_index++) {
@@ -267,10 +267,41 @@ void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const
 
     for (int32_t line_index = 0; line_index < topview_points.size(); line_index++) {
         const auto& line = topview_points[line_index];
-        for (int32_t i = 1; i < line.size(); i++) {
-            const auto& p0 = line[i - 1];
-            const auto& p1 = line[i];
-            cv::line(mat_topview, line[i - 1], line[i], GetColorForLine(line_index), 2);
+        for (const auto& p : line) {
+            cv::circle(mat_topview, cv::Point(p.x, p.y), 5, GetColorForLine(line_index), 2);
+        }
+    }
+
+    /* curve fitting(y = ax^2 + bx + c, where y = depth, x = horizontal)  */
+    static constexpr int32_t kLineIntervalPx = 5;
+    for (int32_t line_index = 0; line_index < topview_points.size(); line_index++) {
+        auto& line = topview_points[line_index];
+        if (line.size() >= 2) {
+            int32_t y_start = line[0].y - std::abs(line[0].y - line[1].y);
+            for (auto& p : line) std::swap(p.x, p.y);
+            if (line.size() > 5) {
+                double a, b, c;
+                if (CurveFitting::SolveQuadraticRegression(line, a, b, c)) {
+                    for (int32_t y = y_start; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
+                        int32_t y0 = y;
+                        int32_t y1 = y + kLineIntervalPx;
+                        int32_t x0 = a * y0 * y0 + b * y0 + c;
+                        int32_t x1 = a * y1 * y1 + b * y1 + c;
+                        cv::line(mat_topview, cv::Point(x0, y0), cv::Point(x1, y1), GetColorForLine(line_index), 2);
+                    }
+                }
+            } else if (line.size() >= 2) {
+                double a, b;
+                if (CurveFitting::SolveLinearRegression(line, a, b)) {
+                    for (int32_t y = y_start; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
+                        int32_t y0 = y;
+                        int32_t y1 = y + kLineIntervalPx;
+                        int32_t x0 = a * y0 + b;
+                        int32_t x1 = a * y1 + b;
+                        cv::line(mat_topview, cv::Point(x0, y0), cv::Point(x1, y1), GetColorForLine(line_index), 2);
+                    }
+                }
+            }
         }
     }
 }
