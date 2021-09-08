@@ -72,7 +72,7 @@ public:
         double sum_x3 = 0;
         double sum_x2 = 0;
         double sum_x1 = 0;
-        double sum_x0 = point_list.size();
+        double sum_x0 = static_cast<double>(point_list.size());
         double sum_xxy = 0;
         double sum_xy = 0;
         double sum_y = 0;

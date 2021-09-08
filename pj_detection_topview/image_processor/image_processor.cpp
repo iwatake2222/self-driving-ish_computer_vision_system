@@ -178,6 +178,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     double time_inference = det_result.time_inference + lane_result.time_inference + segmentation_result.time_inference + depth_result.time_inference;
     CommonHelper::DrawText(mat, "DET: " + std::to_string(det_result.bbox_list.size()) + ", TRACK: " + std::to_string(tracker_.GetTrackList().size()), cv::Point(0, 20), 0.7, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
     DrawFps(mat, time_inference, time_draw, cv::Point(0, 0), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(180, 180, 180), true);
+    cv::line(mat, cv::Point(0, camera_real_.EstimateVanishmentY()), cv::Point(mat.cols, camera_real_.EstimateVanishmentY()), cv::Scalar(0, 0, 0), 1);
 
     /*** Update internal status ***/
     frame_cnt_++;
@@ -268,7 +269,7 @@ void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const
     for (int32_t line_index = 0; line_index < topview_points.size(); line_index++) {
         const auto& line = topview_points[line_index];
         for (const auto& p : line) {
-            cv::circle(mat_topview, cv::Point(p.x, p.y), 5, GetColorForLine(line_index), 2);
+            cv::circle(mat_topview, cv::Point(static_cast<int32_t>(p.x), static_cast<int32_t>(p.y)), 5, GetColorForLine(line_index), 2);
         }
     }
 
@@ -277,7 +278,7 @@ void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const
     for (int32_t line_index = 0; line_index < topview_points.size(); line_index++) {
         auto& line = topview_points[line_index];
         if (line.size() >= 2) {
-            int32_t y_start = line[0].y - std::abs(line[0].y - line[1].y);
+            int32_t y_start = static_cast<int32_t>(line[0].y - std::abs(line[0].y - line[1].y));
             for (auto& p : line) std::swap(p.x, p.y);
             if (line.size() > 5) {
                 double a, b, c;
@@ -285,8 +286,8 @@ void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const
                     for (int32_t y = y_start; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
                         int32_t y0 = y;
                         int32_t y1 = y + kLineIntervalPx;
-                        int32_t x0 = a * y0 * y0 + b * y0 + c;
-                        int32_t x1 = a * y1 * y1 + b * y1 + c;
+                        int32_t x0 = static_cast<int32_t>(a * y0 * y0 + b * y0 + c);
+                        int32_t x1 = static_cast<int32_t>(a * y1 * y1 + b * y1 + c);
                         cv::line(mat_topview, cv::Point(x0, y0), cv::Point(x1, y1), GetColorForLine(line_index), 2);
                     }
                 }
@@ -296,8 +297,8 @@ void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const
                     for (int32_t y = y_start; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
                         int32_t y0 = y;
                         int32_t y1 = y + kLineIntervalPx;
-                        int32_t x0 = a * y0 + b;
-                        int32_t x1 = a * y1 + b;
+                        int32_t x0 = static_cast<int32_t>(a * y0 + b);
+                        int32_t x1 = static_cast<int32_t>(a * y1 + b);
                         cv::line(mat_topview, cv::Point(x0, y0), cv::Point(x1, y1), GetColorForLine(line_index), 2);
                     }
                 }
@@ -359,7 +360,7 @@ void ImageProcessor::DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, con
         cv::circle(mat_topview, topview_points[i], 10, cv::Scalar(0, 0, 0), 2);
 
         cv::Point3f object_point;
-        camera_real_.ProjectImage2GroundPlane(topview_points[i], object_point);
+        camera_real_.ProjectImage2GroundPlane({track_data.bbox.x + track_data.bbox.w / 2.0f, track_data.bbox.y + track_data.bbox.h + 0.0f}, object_point);
         char text[32];
         snprintf(text, sizeof(text), "%s:%.1f,%.1f[m]", track_data.bbox.label.c_str(), object_point.x, object_point.z);
         CommonHelper::DrawText(mat_topview, text, topview_points[i], 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
