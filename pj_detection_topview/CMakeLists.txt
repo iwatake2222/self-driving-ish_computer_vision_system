@@ -18,4 +18,4 @@ target_link_libraries(${ExecName} ${OpenCV_LIBS})
 # Link ImageProcessor module
 add_subdirectory(./image_processor image_processor)
 target_include_directories(${ExecName} PUBLIC ./image_processor)
-target_link_libraries(${ExecName} detection_topview_core)
+target_link_libraries(${ExecName} detection_topview_image_processor)
