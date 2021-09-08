@@ -40,7 +40,6 @@ private:
     typedef struct LineCoeff_ {
         /* y = a * x^2 + b * x + c */
         /*   y = depth, x = horizontal on top view image */
-        /*   origin: left bottom */
         double a;
         double b;
         double c;
@@ -68,9 +67,12 @@ private:
     std::vector<std::vector<cv::Point2f>> normal_line_list_;
     std::vector<std::vector<cv::Point2f>> topview_line_list_;
     std::vector<LineCoeff> line_coeff_list_;
+    std::vector<bool> line_valid_list_;
+    std::vector<int32_t> line_det_cnt_list_;
+    std::vector<int32_t> y_draw_start_list_;
 
     double time_pre_process;    // [msec]
-    double time_inference;       // [msec]
+    double time_inference;      // [msec]
     double time_post_process;   // [msec]
 
 };

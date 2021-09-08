@@ -57,6 +57,33 @@ public:
         return true;
     }
 
+    template <typename T = int32_t>
+    static double ErrorAvgLinearRegression(const std::vector<cv::Point_<T>>& point_list, double a, double b)
+    {
+        double error = 0;
+        for (const auto& p : point_list) {
+            double y = p.y;
+            double y_est = a * p.x + b;
+            error += std::abs(y - y_est);
+        }
+
+        error /= point_list.size();
+        return error;
+    }
+
+    template <typename T = int32_t>
+    static double ErrorMaxLinearRegression(const std::vector<cv::Point_<T>>& point_list, double a, double b)
+    {
+        double error = 0;
+        for (const auto& p : point_list) {
+            double y = p.y;
+            double y_est = a * p.x + b;
+            error = std::max(error, std::abs(y - y_est));
+        }
+
+        return error;
+    }
+
     /* y = ax^2 + bx + c */
     /* point = (x, y) */
     template <typename T>

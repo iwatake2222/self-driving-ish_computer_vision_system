@@ -57,7 +57,6 @@ private:
     cv::Scalar GetColorForSegmentation(int32_t id);
     void CreateTransformMat();
     void CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_topview);
-
     void DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, const DetectionEngine::Result& det_result);
     void DrawSegmentation(cv::Mat& mat_segmentation, const SemanticSegmentationEngine::Result& segmentation_result);
     void DrawDepth(cv::Mat& mat, const DepthEngine::Result& depth_result);

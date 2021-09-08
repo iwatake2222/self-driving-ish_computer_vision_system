@@ -91,23 +91,82 @@ int32_t LaneInformation::Process(const cv::Mat& mat, const cv::Mat& mat_transfor
         topview_line_list_.push_back(topview_line);
     }
 
+
     /* Curve Fitting (y = ax^2 + bx + c, where y = depth, x = horizontal) */
-    std::vector<LineCoeff> curre_tline_coeff_list;
+    std::vector<LineCoeff> current_line_coeff_list;
+    std::vector<bool> current_line_valid_list;
     for (auto line : topview_line_list_) {
         for (auto& p : line) std::swap(p.x, p.y);
         double a = 0, b = 0, c = 0;
-        if (line.size() > 5) {
-            (void)CurveFitting::SolveQuadraticRegression(line, a, b, c);
-        }
-        if (a == 0 && b == 0) {
-            if (line.size() > 2) {
-                (void)CurveFitting::SolveLinearRegression(line, b, c);
+        if (line.size() > 2) {
+            /* At first, try to use linear regression. In case it's not enough(error is big), use quadratic regression */
+            (void)CurveFitting::SolveLinearRegression(line, b, c);
+            if (CurveFitting::ErrorMaxLinearRegression(line, b, c) > 5 && line.size() > 4) {
+                (void)CurveFitting::SolveQuadraticRegression(line, a, b, c);
             }
         }
-        curre_tline_coeff_list.push_back({ a, b, c });
+        current_line_coeff_list.push_back({ a, b, c });
+        if (a == 0 && b == 0 && c == 0) {
+            current_line_valid_list.push_back(false);
+        } else {
+            current_line_valid_list.push_back(true);
+        }
     }
 
-    line_coeff_list_ = curre_tline_coeff_list;
+    if (line_coeff_list_.empty()) {
+        line_coeff_list_ = current_line_coeff_list;
+        line_valid_list_ = current_line_valid_list;
+        line_det_cnt_list_.resize(topview_line_list_.size());
+        y_draw_start_list_.resize(topview_line_list_.size(), 9999);
+    }
+
+    /* Update coeff with smoothing */
+    for (int32_t line_index = 0; line_index < line_coeff_list_.size(); line_index++) {
+        if (current_line_valid_list[line_index]) {
+            float kMixRatio = 0.05f;
+            if (!line_valid_list_[line_index]) {
+                kMixRatio = 1.0f;   /* detect the line at the first time */
+            } else if (line_det_cnt_list_[line_index] < 10) {
+                kMixRatio = 0.2f;   /* the first few frames after the line is detected at the first time */
+            }
+            auto& line_coeff = line_coeff_list_[line_index];
+            line_coeff.a = current_line_coeff_list[line_index].a * kMixRatio + line_coeff.a * (1.0 - kMixRatio);
+            line_coeff.b = current_line_coeff_list[line_index].b * kMixRatio + line_coeff.b * (1.0 - kMixRatio);
+            line_coeff.c = current_line_coeff_list[line_index].c * kMixRatio + line_coeff.c * (1.0 - kMixRatio);
+        }
+    }
+
+    /* Check if line is (possibly) valid */
+    for (int32_t line_index = 0; line_index < current_line_valid_list.size(); line_index++) {
+        if (current_line_valid_list[line_index]) {
+            if (line_det_cnt_list_[line_index] < 0) {
+                line_det_cnt_list_[line_index] = 0;
+            } else {
+                line_det_cnt_list_[line_index]++;
+            }
+            line_valid_list_[line_index] = true;
+        } else {
+            if (line_det_cnt_list_[line_index] > 0) {
+                line_det_cnt_list_[line_index] = 0;
+            } else {
+                line_det_cnt_list_[line_index]--;
+            }
+            if (line_det_cnt_list_[line_index] < -40) {
+                line_valid_list_[line_index] = false;
+            }
+        }
+    }
+
+    /* Store line start position */
+    for (int32_t line_index = 0; line_index < topview_line_list_.size(); line_index++) {
+        const auto& line = topview_line_list_[line_index];
+        if (current_line_valid_list[line_index]) {
+            float y_top = line[0].y;
+            float y_bottom = line[line.size() - 1].y;
+            float length = std::abs(y_bottom - y_top);
+            y_draw_start_list_[line_index] = (std::max)(static_cast<int32_t>(y_top - length * 0.5), 0);
+        }
+    }
 
     return kRetOk;
 }
@@ -137,9 +196,8 @@ void LaneInformation::Draw(cv::Mat& mat, cv::Mat& mat_topview)
     for (int32_t line_index = 0; line_index < topview_line_list_.size(); line_index++) {
         const auto& line = topview_line_list_[line_index];
         const auto& coeff = line_coeff_list_[line_index];
-        if (line.size() >= 2) {
-            int32_t y_start = static_cast<int32_t>(line[0].y - std::abs(line[0].y - line[1].y));
-            for (int32_t y = y_start; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
+        if (line_valid_list_[line_index]) {
+            for (int32_t y = y_draw_start_list_[line_index]; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
                 int32_t y0 = y;
                 int32_t y1 = y + kLineIntervalPx;
                 int32_t x0 = static_cast<int32_t>(coeff.a * y0 * y0 + coeff.b * y0 + coeff.c);
