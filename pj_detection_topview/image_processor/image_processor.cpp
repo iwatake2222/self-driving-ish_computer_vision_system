@@ -33,11 +33,10 @@ limitations under the License.
 #include "common_helper.h"
 #include "common_helper_cv.h"
 #include "camera_model.h"
-#include "curve_fitting.h"
 #include "bounding_box.h"
 #include "detection_engine.h"
 #include "tracker.h"
-#include "lane_engine.h"
+#include "lane_information.h"
 #include "depth_engine.h"
 
 #include "image_processor_if.h"
@@ -71,8 +70,8 @@ int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_par
         return kRetErr;
     }
 
-    if (lane_engine_.Initialize(input_param.work_dir, input_param.num_threads) != LaneEngine::kRetOk) {
-        lane_engine_.Finalize();
+    if (lane_information_.Initialize(input_param.work_dir, input_param.num_threads) != LaneInformation::kRetOk) {
+        lane_information_.Finalize();
         return kRetErr;
     }
 
@@ -98,7 +97,7 @@ int32_t ImageProcessor::Finalize(void)
         return kRetErr;
     }
 
-    if (lane_engine_.Finalize() != LaneEngine::kRetOk) {
+    if (lane_information_.Finalize() != LaneInformation::kRetOk) {
         return kRetErr;
     }
 
@@ -138,8 +137,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     }
     tracker_.Update(det_result.bbox_list);
 
-    LaneEngine::Result lane_result;
-    if (lane_engine_.Process(mat_original, lane_result) != LaneEngine::kRetOk) {
+    if (lane_information_.Process(mat_original, mat_transform_) != LaneInformation::kRetOk) {
         return kRetErr;
     }
 
@@ -168,14 +166,14 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     CreateTopViewMat(mat_segmentation, mat_topview);
     mat_segmentation = mat_segmentation(cv::Rect(0, vanishment_y_, mat_segmentation.cols, mat_segmentation.rows - vanishment_y_));
 
-    DrawLaneDetection(mat, mat_topview, lane_result);
+    lane_information_.Draw(mat, mat_topview);
     DrawObjectDetection(mat, mat_topview, det_result);
     DrawDepth(mat_depth, depth_result);
     const auto& time_draw1 = std::chrono::steady_clock::now();
 
     /*** Draw statistics ***/
     double time_draw = (time_draw1 - time_draw0).count() / 1000000.0;
-    double time_inference = det_result.time_inference + lane_result.time_inference + segmentation_result.time_inference + depth_result.time_inference;
+    double time_inference = det_result.time_inference + lane_information_.GetTimeInference() + segmentation_result.time_inference + depth_result.time_inference;
     CommonHelper::DrawText(mat, "DET: " + std::to_string(det_result.bbox_list.size()) + ", TRACK: " + std::to_string(tracker_.GetTrackList().size()), cv::Point(0, 20), 0.7, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
     DrawFps(mat, time_inference, time_draw, cv::Point(0, 0), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(180, 180, 180), true);
     cv::line(mat, cv::Point(0, camera_real_.EstimateVanishmentY()), cv::Point(mat.cols, camera_real_.EstimateVanishmentY()), cv::Scalar(0, 0, 0), 1);
@@ -188,9 +186,9 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     result.mat_output_segmentation = mat_segmentation;
     result.mat_output_depth = mat_depth;
     result.mat_output_topview = mat_topview;
-    result.time_pre_process = det_result.time_pre_process + lane_result.time_pre_process + segmentation_result.time_pre_process + depth_result.time_pre_process;
-    result.time_inference = det_result.time_inference + lane_result.time_inference + segmentation_result.time_inference + depth_result.time_inference;
-    result.time_post_process = det_result.time_post_process + lane_result.time_post_process + segmentation_result.time_post_process + depth_result.time_post_process;
+    result.time_pre_process = det_result.time_pre_process + lane_information_.GetTimePreProcess() + segmentation_result.time_pre_process + depth_result.time_pre_process;
+    result.time_inference = det_result.time_inference + lane_information_.GetTimeInference() + segmentation_result.time_inference + depth_result.time_inference;
+    result.time_post_process = det_result.time_post_process + lane_information_.GetTimePostProcess() + segmentation_result.time_post_process + depth_result.time_post_process;
 
     return kRetOk;
 }
@@ -233,77 +231,6 @@ void ImageProcessor::DrawSegmentation(cv::Mat& mat_segmentation, const SemanticS
     mat_segmentation = cv::Mat::zeros(mat_segmentation_list[0].size(), CV_8UC3);
     for (int32_t i = 0; i < mat_segmentation_list.size(); i++) {
         cv::add(mat_segmentation, mat_segmentation_list[i], mat_segmentation);
-    }
-}
-
-void ImageProcessor::DrawLaneDetection(cv::Mat& mat, cv::Mat& mat_topview, const LaneEngine::Result& lane_result)
-{
-    /*** Draw on NormalView ***/
-    for (int32_t line_index = 0; line_index < lane_result.line_list.size(); line_index++) {
-        const auto& line = lane_result.line_list[line_index];
-        for (const auto& p : line) {
-            cv::circle(mat, cv::Point(p.first, p.second), 5, GetColorForLine(line_index), 2);
-        }
-    }
-
-    /*** Draw on TopView ***/
-    /* normal -> topview */
-    std::vector <std::vector<cv::Point2f>> normal_points;
-    std::vector <std::vector<cv::Point2f>> topview_points;
-    for (int32_t line_index = 0; line_index < lane_result.line_list.size(); line_index++) {
-        std::vector<cv::Point2f> normal_line;
-        const auto& line = lane_result.line_list[line_index];
-        for (const auto& p : line) {
-            normal_line.push_back({ static_cast<float>(p.first), static_cast<float>(p.second) });
-        }
-        normal_points.push_back(normal_line);
-    }
-    for (int32_t line_index = 0; line_index < lane_result.line_list.size(); line_index++) {
-        std::vector<cv::Point2f> topview_line;
-        if (normal_points[line_index].size() > 0) {
-            cv::perspectiveTransform(normal_points[line_index], topview_line, mat_transform_);
-        }
-        topview_points.push_back(topview_line);
-    }
-
-    for (int32_t line_index = 0; line_index < topview_points.size(); line_index++) {
-        const auto& line = topview_points[line_index];
-        for (const auto& p : line) {
-            cv::circle(mat_topview, cv::Point(static_cast<int32_t>(p.x), static_cast<int32_t>(p.y)), 5, GetColorForLine(line_index), 2);
-        }
-    }
-
-    /* curve fitting(y = ax^2 + bx + c, where y = depth, x = horizontal)  */
-    static constexpr int32_t kLineIntervalPx = 5;
-    for (int32_t line_index = 0; line_index < topview_points.size(); line_index++) {
-        auto& line = topview_points[line_index];
-        if (line.size() >= 2) {
-            int32_t y_start = static_cast<int32_t>(line[0].y - std::abs(line[0].y - line[1].y));
-            for (auto& p : line) std::swap(p.x, p.y);
-            if (line.size() > 5) {
-                double a, b, c;
-                if (CurveFitting::SolveQuadraticRegression(line, a, b, c)) {
-                    for (int32_t y = y_start; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
-                        int32_t y0 = y;
-                        int32_t y1 = y + kLineIntervalPx;
-                        int32_t x0 = static_cast<int32_t>(a * y0 * y0 + b * y0 + c);
-                        int32_t x1 = static_cast<int32_t>(a * y1 * y1 + b * y1 + c);
-                        cv::line(mat_topview, cv::Point(x0, y0), cv::Point(x1, y1), GetColorForLine(line_index), 2);
-                    }
-                }
-            } else if (line.size() >= 2) {
-                double a, b;
-                if (CurveFitting::SolveLinearRegression(line, a, b)) {
-                    for (int32_t y = y_start; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
-                        int32_t y0 = y;
-                        int32_t y1 = y + kLineIntervalPx;
-                        int32_t x0 = static_cast<int32_t>(a * y0 + b);
-                        int32_t x1 = static_cast<int32_t>(a * y1 + b);
-                        cv::line(mat_topview, cv::Point(x0, y0), cv::Point(x1, y1), GetColorForLine(line_index), 2);
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -398,20 +325,6 @@ cv::Scalar ImageProcessor::GetColorForId(int32_t id)
     return color_list[id % kMaxNum];
 }
 
-cv::Scalar ImageProcessor::GetColorForLine(int32_t id)
-{
-    switch (id) {
-    default:
-    case 0:
-        return CommonHelper::CreateCvColor(255, 255, 0);
-    case 1:
-        return CommonHelper::CreateCvColor(0, 255, 255);
-    case 2:
-        return CommonHelper::CreateCvColor(0, 255, 255);
-    case 3:
-        return CommonHelper::CreateCvColor(255, 255, 0);
-    }
-}
 
 cv::Scalar ImageProcessor::GetColorForSegmentation(int32_t id)
 {

@@ -8,6 +8,7 @@ add_library (${LibraryName} image_processor.cpp image_processor.h image_processo
     lane_engine.cpp lane_engine.h
     semantic_segmentation_engine.cpp semantic_segmentation_engine.h
     depth_engine.cpp depth_engine.h
+    lane_information.cpp lane_information.h
 )
 
 # OpenCV
