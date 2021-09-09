@@ -56,6 +56,7 @@ limitations under the License.
 #define IS_RGB      true
 #define OUTPUT_NAME "Identity"
 #elif defined(MODEL_TYPE_ONNX)
+#include "inference_helper_tensorrt.h"      // to call SetDlaCore
 #define MODEL_NAME  "ultra_fast_lane_detection_culane_288x800.onnx"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
 #define INPUT_NAME  "input.1"
@@ -120,6 +121,8 @@ int32_t LaneEngine::Initialize(const std::string& work_dir, const int32_t num_th
     //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorflowLiteNnapi));
 #elif defined(MODEL_TYPE_ONNX)
     inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorrt));
+    // InferenceHelperTensorRt* p = dynamic_cast<InferenceHelperTensorRt*>(inference_helper_.get());
+    // if (p) p->SetDlaCore(0);  /* Use DLA */
 #endif
 
     if (!inference_helper_) {

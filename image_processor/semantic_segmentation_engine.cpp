@@ -55,6 +55,7 @@ limitations under the License.
 #define IS_RGB      false
 #define OUTPUT_NAME "Identity"
 #elif defined(MODEL_TYPE_ONNX)
+#include "inference_helper_tensorrt.h"      // to call SetDlaCore
 #define MODEL_NAME  "road-segmentation-adas-0001.onnx"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
 #define INPUT_NAME  "data"
@@ -100,6 +101,8 @@ int32_t SemanticSegmentationEngine::Initialize(const std::string& work_dir, cons
 #elif defined(MODEL_TYPE_ONNX)
     //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kOpencv));
     inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorrt));
+    // InferenceHelperTensorRt* p = dynamic_cast<InferenceHelperTensorRt*>(inference_helper_.get());
+    // if (p) p->SetDlaCore(0);  /* Use DLA */
 #endif
 
     if (!inference_helper_) {
