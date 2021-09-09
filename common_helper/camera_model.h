@@ -243,8 +243,8 @@ public:
         /*   Rinv * (s * Kinv * [u, v, 1] - t) = M */
         /* calculate s */
         /*   s * Rinv * Kinv * [u, v, 1] = M + R_inv * t */
-        /*      where, M = (X, Y, Z) and Y = camera_height(ground_plane) */
-        /*      so , we can solve left[1] = M[1](camera_height) */
+        /*      where, M = (X, Y, Z), and we assume Y = 0(ground_plane) */
+        /*      so , we can solve left[1] = R_inv * t[1](camera_height) */
 
         cv::Mat K = parameter.K;
         cv::Mat R = MakeRotateMat(Rad2Deg(parameter.pitch()), Rad2Deg(parameter.yaw()), Rad2Deg(parameter.roll()));
