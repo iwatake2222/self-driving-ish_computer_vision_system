@@ -36,7 +36,7 @@ limitations under the License.
 #include "bounding_box.h"
 #include "detection_engine.h"
 #include "tracker.h"
-#include "lane_information.h"
+#include "lane_detection.h"
 #include "depth_engine.h"
 
 #include "image_processor_if.h"
@@ -70,8 +70,8 @@ int32_t ImageProcessor::Initialize(const ImageProcessorIf::InputParam& input_par
         return kRetErr;
     }
 
-    if (lane_information_.Initialize(input_param.work_dir, input_param.num_threads) != LaneInformation::kRetOk) {
-        lane_information_.Finalize();
+    if (lane_detection_.Initialize(input_param.work_dir, input_param.num_threads) != LaneDetection::kRetOk) {
+        lane_detection_.Finalize();
         return kRetErr;
     }
 
@@ -97,7 +97,7 @@ int32_t ImageProcessor::Finalize(void)
         return kRetErr;
     }
 
-    if (lane_information_.Finalize() != LaneInformation::kRetOk) {
+    if (lane_detection_.Finalize() != LaneDetection::kRetOk) {
         return kRetErr;
     }
 
@@ -137,7 +137,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     }
     tracker_.Update(det_result.bbox_list);
 
-    if (lane_information_.Process(mat_original, mat_transform_) != LaneInformation::kRetOk) {
+    if (lane_detection_.Process(mat_original, mat_transform_) != LaneDetection::kRetOk) {
         return kRetErr;
     }
 
@@ -166,14 +166,14 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     CreateTopViewMat(mat_segmentation, mat_topview);
     mat_segmentation = mat_segmentation(cv::Rect(0, vanishment_y_, mat_segmentation.cols, mat_segmentation.rows - vanishment_y_));
 
-    lane_information_.Draw(mat, mat_topview);
+    lane_detection_.Draw(mat, mat_topview);
     DrawObjectDetection(mat, mat_topview, det_result);
     DrawDepth(mat_depth, depth_result);
     const auto& time_draw1 = std::chrono::steady_clock::now();
 
     /*** Draw statistics ***/
     double time_draw = (time_draw1 - time_draw0).count() / 1000000.0;
-    double time_inference = det_result.time_inference + lane_information_.GetTimeInference() + segmentation_result.time_inference + depth_result.time_inference;
+    double time_inference = det_result.time_inference + lane_detection_.GetTimeInference() + segmentation_result.time_inference + depth_result.time_inference;
     CommonHelper::DrawText(mat, "DET: " + std::to_string(det_result.bbox_list.size()) + ", TRACK: " + std::to_string(tracker_.GetTrackList().size()), cv::Point(0, 20), 0.7, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
     DrawFps(mat, time_inference, time_draw, cv::Point(0, 0), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(180, 180, 180), true);
     cv::line(mat, cv::Point(0, camera_real_.EstimateVanishmentY()), cv::Point(mat.cols, camera_real_.EstimateVanishmentY()), cv::Scalar(0, 0, 0), 1);
@@ -186,9 +186,9 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     result.mat_output_segmentation = mat_segmentation;
     result.mat_output_depth = mat_depth;
     result.mat_output_topview = mat_topview;
-    result.time_pre_process = det_result.time_pre_process + lane_information_.GetTimePreProcess() + segmentation_result.time_pre_process + depth_result.time_pre_process;
-    result.time_inference = det_result.time_inference + lane_information_.GetTimeInference() + segmentation_result.time_inference + depth_result.time_inference;
-    result.time_post_process = det_result.time_post_process + lane_information_.GetTimePostProcess() + segmentation_result.time_post_process + depth_result.time_post_process;
+    result.time_pre_process = det_result.time_pre_process + lane_detection_.GetTimePreProcess() + segmentation_result.time_pre_process + depth_result.time_pre_process;
+    result.time_inference = det_result.time_inference + lane_detection_.GetTimeInference() + segmentation_result.time_inference + depth_result.time_inference;
+    result.time_post_process = det_result.time_post_process + lane_detection_.GetTimePostProcess() + segmentation_result.time_post_process + depth_result.time_post_process;
 
     return kRetOk;
 }

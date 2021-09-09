@@ -30,7 +30,7 @@ limitations under the License.
 #include "camera_model.h"
 #include "detection_engine.h"
 #include "tracker.h"
-#include "lane_information.h"
+#include "lane_detection.h"
 #include "semantic_segmentation_engine.h"
 #include "depth_engine.h"
 
@@ -71,7 +71,7 @@ private:
 
     DetectionEngine detection_engine_;
     Tracker tracker_;
-    LaneInformation lane_information_;
+    LaneDetection lane_detection_;
     SemanticSegmentationEngine segmentation_engine_;
     DepthEngine depth_engine_;
 

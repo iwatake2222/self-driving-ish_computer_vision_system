@@ -33,17 +33,17 @@ limitations under the License.
 #include "common_helper.h"
 #include "common_helper_cv.h"
 #include "curve_fitting.h"
-#include "lane_information.h"
+#include "lane_detection.h"
 
 
 /*** Macro ***/
-#define TAG "LaneInformation"
+#define TAG "LaneDetection"
 #define PRINT(...)   COMMON_HELPER_PRINT(TAG, __VA_ARGS__)
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 
 /*** Function ***/
-int32_t LaneInformation::Initialize(const std::string& work_dir, const int32_t num_threads)
+int32_t LaneDetection::Initialize(const std::string& work_dir, const int32_t num_threads)
 {
     if (lane_engine_.Initialize(work_dir, num_threads) != LaneEngine::kRetOk) {
         lane_engine_.Finalize();
@@ -52,7 +52,7 @@ int32_t LaneInformation::Initialize(const std::string& work_dir, const int32_t n
     return kRetOk;
 }
 
-int32_t LaneInformation::Finalize()
+int32_t LaneDetection::Finalize()
 {
     if (lane_engine_.Finalize() != LaneEngine::kRetOk) {
         return kRetErr;
@@ -60,7 +60,7 @@ int32_t LaneInformation::Finalize()
     return kRetOk;
 }
 
-int32_t LaneInformation::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
+int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
 {
     /* Run inference to get line (points) */
     LaneEngine::Result lane_result;
@@ -171,7 +171,7 @@ int32_t LaneInformation::Process(const cv::Mat& mat, const cv::Mat& mat_transfor
     return kRetOk;
 }
 
-void LaneInformation::Draw(cv::Mat& mat, cv::Mat& mat_topview)
+void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
 {
     /*** Draw on NormalView ***/
     /* draw points */
@@ -208,7 +208,7 @@ void LaneInformation::Draw(cv::Mat& mat, cv::Mat& mat_topview)
     }
 }
 
-cv::Scalar LaneInformation::GetColorForLine(int32_t id)
+cv::Scalar LaneDetection::GetColorForLine(int32_t id)
 {
     switch (id) {
     default:

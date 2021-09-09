@@ -12,8 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef LANE_INFORMATION_H_
-#define LANE_INFORMATION_H_
+#ifndef LANE_DETECTION_H_
+#define LANE_DETECTION_H_
 
 /* for general */
 #include <cstdint>
@@ -29,7 +29,7 @@ limitations under the License.
 /* for My modules */
 #include "lane_engine.h"
 
-class LaneInformation {
+class LaneDetection {
 public:
     enum {
         kRetOk = 0,
@@ -48,8 +48,8 @@ private:
     } LineCoeff;
 
 public:
-    LaneInformation(): time_pre_process(0), time_inference(0), time_post_process(0) {}
-    ~LaneInformation() {}
+    LaneDetection(): time_pre_process(0), time_inference(0), time_post_process(0) {}
+    ~LaneDetection() {}
     int32_t Initialize(const std::string& work_dir, const int32_t num_threads);
     int32_t Finalize(void);
     int32_t Process(const cv::Mat& mat, const cv::Mat& mat_transform);
