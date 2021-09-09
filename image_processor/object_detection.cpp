@@ -131,7 +131,7 @@ void ObjectDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
         cv::rectangle(mat, cv::Rect(bbox.x, bbox.y, bbox.w, bbox.h), color, 2);
 
         char text[32];
-        snprintf(text, sizeof(text), "%s:%.1f,%.1f[m]", bbox.label.c_str(), object_point.x, object_point.z);
+        snprintf(text, sizeof(text), "%.1f,%.1f", object_point.x, object_point.z);
         CommonHelper::DrawText(mat, text, cv::Point(bbox.x, bbox.y - 13), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
 
         //auto& track_history = track.GetDataHistory();
@@ -155,8 +155,10 @@ void ObjectDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
         cv::circle(mat_topview, p, 10, cv::Scalar(0, 0, 0), 2);
 
         char text[32];
-        snprintf(text, sizeof(text), "%s:%.1f,%.1f[m]", bbox.label.c_str(), object_point.x, object_point.z);
-        CommonHelper::DrawText(mat_topview, text, p, 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
+        snprintf(text, sizeof(text), "%s", bbox.label.c_str());
+        CommonHelper::DrawText(mat_topview, text, p, 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(255, 255, 255), false);
+        snprintf(text, sizeof(text), "%.1f,%.1f", object_point.x, object_point.z);
+        CommonHelper::DrawText(mat_topview, text, p + cv::Point(0, 15), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(255, 255, 255), false);
 
         //auto& track_history = track.GetDataHistory();
         //for (size_t i = 1; i < track_history.size(); i++) {

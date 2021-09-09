@@ -266,10 +266,10 @@ void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
     }
     camera_real_.parameter.SetExtrinsic(
         { 0.0f, 0.0f, 0.0f },    /* rvec [deg] */
-        { 0.0f, 1.0f, 0.0f });   /* tvec */
+        { 0.0f, 1.5f, 0.0f });   /* tvec */
     camera_top_.parameter.SetExtrinsic(
         { 90.0f, 0.0f, 0.0f },    /* rvec [deg] */
-        { 0.0f, 8.0f, 7.0f });   /* tvec */  /* tvec is in camera coordinate, so Z is height because pitch = 90 */
+        { 0.0f, 8.0f, 5.0f });   /* tvec */  /* tvec is in camera coordinate, so Z is height because pitch = 90 */
     CreateTransformMat();
     vanishment_y_ = std::max(0, std::min(height, camera_real_.EstimateVanishmentY()));
 }
