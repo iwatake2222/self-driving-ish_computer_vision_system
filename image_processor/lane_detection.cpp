@@ -121,7 +121,7 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
     }
 
     /* Update coeff with smoothing */
-    for (int32_t line_index = 0; line_index < line_coeff_list_.size(); line_index++) {
+    for (int32_t line_index = 0; line_index < static_cast<int32_t>(line_coeff_list_.size()); line_index++) {
         if (current_line_valid_list[line_index]) {
             float kMixRatio = 0.05f;
             if (!line_valid_list_[line_index]) {
@@ -137,7 +137,7 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
     }
 
     /* Check if line is (possibly) valid */
-    for (int32_t line_index = 0; line_index < current_line_valid_list.size(); line_index++) {
+    for (int32_t line_index = 0; line_index < static_cast<int32_t>(current_line_valid_list.size()); line_index++) {
         if (current_line_valid_list[line_index]) {
             if (line_det_cnt_list_[line_index] < 0) {
                 line_det_cnt_list_[line_index] = 0;
@@ -158,7 +158,7 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
     }
 
     /* Store line start position */
-    for (int32_t line_index = 0; line_index < topview_line_list_.size(); line_index++) {
+    for (int32_t line_index = 0; line_index < static_cast<int32_t>(topview_line_list_.size()); line_index++) {
         const auto& line = topview_line_list_[line_index];
         if (current_line_valid_list[line_index]) {
             float y_top = line[0].y;
@@ -175,7 +175,7 @@ void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
 {
     /*** Draw on NormalView ***/
     /* draw points */
-    for (int32_t line_index = 0; line_index < normal_line_list_.size(); line_index++) {
+    for (int32_t line_index = 0; line_index < static_cast<int32_t>(normal_line_list_.size()); line_index++) {
         const auto& line = normal_line_list_[line_index];
         for (const auto& p : line) {
             cv::circle(mat, p, 5, GetColorForLine(line_index), 2);
@@ -184,7 +184,7 @@ void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
 
     /*** Draw on TopView ***/
     /* draw points */
-    for (int32_t line_index = 0; line_index < topview_line_list_.size(); line_index++) {
+    for (int32_t line_index = 0; line_index < static_cast<int32_t>(topview_line_list_.size()); line_index++) {
         const auto& line = topview_line_list_[line_index];
         for (const auto& p : line) {
             cv::circle(mat_topview, p, 5, GetColorForLine(line_index), 2);
@@ -193,8 +193,7 @@ void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
 
     /* draw line */
     static constexpr int32_t kLineIntervalPx = 5;
-    for (int32_t line_index = 0; line_index < topview_line_list_.size(); line_index++) {
-        const auto& line = topview_line_list_[line_index];
+    for (int32_t line_index = 0; line_index < static_cast<int32_t>(topview_line_list_.size()); line_index++) {
         const auto& coeff = line_coeff_list_[line_index];
         if (line_valid_list_[line_index]) {
             for (int32_t y = y_draw_start_list_[line_index]; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {

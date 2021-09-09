@@ -202,7 +202,7 @@ void ImageProcessor::DrawSegmentation(cv::Mat& mat_segmentation, const SemanticS
     /* Draw on NormalView */
     std::vector<cv::Mat> mat_segmentation_list(4, cv::Mat());
 #pragma omp parallel for
-    for (int32_t i = 0; i < segmentation_result.image_list.size(); i++) {
+    for (int32_t i = 0; i < static_cast<int32_t>(segmentation_result.image_list.size()); i++) {
         cv::Mat mat_fp32_3;
         cv::cvtColor(segmentation_result.image_list[i], mat_fp32_3, cv::COLOR_GRAY2BGR); /* 1channel -> 3 channel */
         cv::multiply(mat_fp32_3, GetColorForSegmentation(i), mat_fp32_3);
@@ -212,7 +212,7 @@ void ImageProcessor::DrawSegmentation(cv::Mat& mat_segmentation, const SemanticS
 
 //#pragma omp parallel for  /* don't use */
     mat_segmentation = cv::Mat::zeros(mat_segmentation_list[0].size(), CV_8UC3);
-    for (int32_t i = 0; i < mat_segmentation_list.size(); i++) {
+    for (int32_t i = 0; i < static_cast<int32_t>(mat_segmentation_list.size()); i++) {
         cv::add(mat_segmentation, mat_segmentation_list[i], mat_segmentation);
     }
 }

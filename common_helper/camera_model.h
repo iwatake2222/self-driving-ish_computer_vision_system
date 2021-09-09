@@ -76,7 +76,6 @@ public:
         void SetIntrinsic(int32_t _width, int32_t _height, float focal_length) {
             width = _width;
             height = _height;
-            float f = focal_length;
             K = (cv::Mat_<float>(3, 3) <<
                 focal_length,            0,  width / 2.f,
                            0, focal_length, height / 2.f,
@@ -118,7 +117,7 @@ public:
     static float FocalLength(int32_t image_size, float fov)
     {
         /* (w/2) / f = tan(fov/2) */
-        return (image_size / 2) / std::tanf(Deg2Rad(fov / 2));
+        return (image_size / 2) / std::tan(Deg2Rad(fov / 2));
     }
 
     template <typename T = float>

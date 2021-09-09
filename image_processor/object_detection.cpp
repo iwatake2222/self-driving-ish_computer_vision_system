@@ -84,7 +84,7 @@ int32_t ObjectDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transfor
     }
     if (normal_points.size() > 0) {
         cv::perspectiveTransform(normal_points, topview_points, mat_transform);
-        for (int32_t i = 0; i < track_list.size(); i++) {
+        for (int32_t i = 0; i < static_cast<int32_t>(track_list.size()); i++) {
             auto& track_data = track_list[i].GetLatestData();
             track_data.topview_point.x = static_cast<int32_t>(topview_points[i].x);
             track_data.topview_point.y = static_cast<int32_t>(topview_points[i].y);
@@ -135,7 +135,7 @@ void ObjectDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
         CommonHelper::DrawText(mat, text, cv::Point(bbox.x, bbox.y - 13), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
 
         //auto& track_history = track.GetDataHistory();
-        //for (size_t i = 1; i < track_history.size(); i++) {
+        //for (int32_t i = 1; i < static_cast<int32_t>(track_history.size()); i++) {
         //    cv::Point p0(track_history[i].bbox.x + track_history[i].bbox.w / 2, track_history[i].bbox.y + track_history[i].bbox.h);
         //    cv::Point p1(track_history[i - 1].bbox.x + track_history[i - 1].bbox.w / 2, track_history[i - 1].bbox.y + track_history[i - 1].bbox.h);
         //    cv::line(mat, p0, p1, GetColorForId(track.GetId()));
@@ -143,7 +143,7 @@ void ObjectDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
     }
 
     /* Draw on TopView*/
-    for (int32_t i = 0; i < track_list.size(); i++) {
+    for (int32_t i = 0; i < static_cast<int32_t>(track_list.size()); i++) {
         auto& track = track_list[i];
         const auto& bbox = track.GetLatestData().bbox;
         const auto& object_point = track.GetLatestData().object_point;
@@ -161,7 +161,7 @@ void ObjectDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
         CommonHelper::DrawText(mat_topview, text, p + cv::Point(0, 15), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(255, 255, 255), false);
 
         //auto& track_history = track.GetDataHistory();
-        //for (size_t i = 1; i < track_history.size(); i++) {
+        //for (int32_t i = 1; i < static_cast<int32_t>(track_history.size()); i++) {
         //    cv::Point p0(track_history[i - 1].topview_point.x, track_history[i - 1].topview_point.y);
         //    cv::Point p1(track_history[i].topview_point.x, track_history[i].topview_point.y);
         //    cv::line(mat_topview, p0, p1, GetColorForId(track.GetId()));
