@@ -108,17 +108,21 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform,
     std::vector<bool> current_line_valid_list;
     for (auto line : ground_line_list_) {
         double a = 0, b = 0, c = 0;
-        if (line.size() > 2) {
-            /* At first, try to use linear regression. In case it's not enough(error is big), use quadratic regression */
+        double error = 999;
+        if (line.size() > 4 && std::abs(line[0].x - line[line.size() - 1].x) > 5) {
+            /* At first, try to use quadratic regression if I have enough points and the points have enough length (more than 5m) */
+            (void)CurveFitting::SolveQuadraticRegression(line, a, b, c);
+            error = CurveFitting::ErrorMaxQuadraticRegression(line, a, b, c);
+        }
+        if (error > 0.3 && line.size() > 2) {
+            /* Use linear regression, if I didn't use quadratic regression or the result of quadratic regression is not good (the maximum error > 0.3m) */
             (void)CurveFitting::SolveLinearRegression(line, b, c);
-            if (CurveFitting::ErrorMaxLinearRegression(line, b, c) > 0.3 && line.size() > 4) {
-                (void)CurveFitting::SolveQuadraticRegression(line, a, b, c);
-                if (CurveFitting::ErrorMaxQuadraticRegression(line, a, b, c) > 0.3) {
-                    /* line is invalid when error is huge */
-                    a = 0;
-                    b = 0;
-                    c = 0;
-                }
+            error = CurveFitting::ErrorMaxLinearRegression(line, b, c);
+            if (error > 0.3) {
+                /* Regression failes is error is huge */
+                a = 0;
+                b = 0;
+                c = 0;
             }
         }
         current_line_coeff_list.push_back({ a, b, c });
