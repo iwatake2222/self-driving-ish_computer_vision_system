@@ -98,7 +98,6 @@ int32_t ObjectDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transfor
         auto& object_point_track = track.GetLatestData().object_point;
         cv::Point3f object_point;
         camera.ProjectImage2GroundPlane(cv::Point2f(bbox.x + bbox.w / 2.0f, bbox.y + bbox.h + 0.0f), object_point);
-        if (bbox.y + bbox.h < vanishment_y) object_point.z = 999;
         object_point_track.x = object_point.x;
         object_point_track.y = object_point.y;
         object_point_track.z = object_point.z;
@@ -132,7 +131,7 @@ void ObjectDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
 
         char text[32];
         snprintf(text, sizeof(text), "%.1f,%.1f", object_point.x, object_point.z);
-        CommonHelper::DrawText(mat, text, cv::Point(bbox.x, bbox.y - 13), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
+        CommonHelper::DrawText(mat, text, cv::Point(bbox.x, bbox.y - 20), 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(220, 220, 220));
 
         //auto& track_history = track.GetDataHistory();
         //for (int32_t i = 1; i < static_cast<int32_t>(track_history.size()); i++) {

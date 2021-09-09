@@ -235,10 +235,14 @@ int32_t LaneEngine::Process(const cv::Mat& original_mat, Result& result)
     InputTensorInfo& input_tensor_info = input_tensor_info_list_[0];
 
     /* do resize and color conversion here because some inference engine doesn't support these operations */
+    //int32_t crop_x = 0;
+    //int32_t crop_y = 0;
+    //int32_t crop_w = original_mat.cols;
+    //int32_t crop_h = original_mat.rows;
     int32_t crop_x = 0;
-    int32_t crop_y = 0;
     int32_t crop_w = original_mat.cols;
-    int32_t crop_h = original_mat.rows;
+    int32_t crop_h = (crop_w * kNumHeight) / kNumWidth;
+    int32_t crop_y = (original_mat.rows - crop_h) / 1;
     cv::Mat img_src = cv::Mat::zeros(input_tensor_info.GetHeight(), input_tensor_info.GetWidth(), CV_8UC3);
     CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeStretch);
     //CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeCut);

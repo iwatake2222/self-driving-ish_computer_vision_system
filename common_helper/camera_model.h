@@ -227,6 +227,12 @@ public:
         float u = image_point_undistort[0].x;
         float v = image_point_undistort[0].y;
 
+        if (v < EstimateVanishmentY()) {
+            object_point.x = 999;
+            object_point.y = 999;
+            object_point.z = 999;
+            return;
+        }
 
         /*** Calculate point in ground plane (in world coordinate) ***/
         /* Main idea:*/

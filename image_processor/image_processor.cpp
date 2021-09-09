@@ -49,7 +49,7 @@ limitations under the License.
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 #define COLOR_BG  CommonHelper::CreateCvColor(70, 70, 70)
-static constexpr float kTopViewSizeRatio = 0.5f;
+static constexpr float kTopViewSizeRatio = 0.75f;
 
 
 /*** Global variable ***/
@@ -137,7 +137,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
         return kRetErr;
     }
 
-    if (lane_detection_.Process(mat_original, mat_transform_) != LaneDetection::kRetOk) {
+    if (lane_detection_.Process(mat_original, mat_transform_, camera_real_) != LaneDetection::kRetOk) {
         return kRetErr;
     }
 
@@ -166,7 +166,7 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     CreateTopViewMat(mat_segmentation, mat_topview);
     mat_segmentation = mat_segmentation(cv::Rect(0, vanishment_y_, mat_segmentation.cols, mat_segmentation.rows - vanishment_y_));
     cv::line(mat, cv::Point(0, camera_real_.EstimateVanishmentY()), cv::Point(mat.cols, camera_real_.EstimateVanishmentY()), cv::Scalar(0, 0, 0), 1);
-    lane_detection_.Draw(mat, mat_topview);
+    lane_detection_.Draw(mat, mat_topview, camera_top_);
     object_detection_.Draw(mat, mat_topview);
     DrawDepth(mat_depth, depth_result);
     const auto& time_draw1 = std::chrono::steady_clock::now();
@@ -255,14 +255,14 @@ void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
 {
     if (width > 0 && height > 0 && fov_deg > 0) {
         camera_real_.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
-        camera_top_.parameter.SetIntrinsic(width * kTopViewSizeRatio, height * kTopViewSizeRatio, CameraModel::FocalLength(width * kTopViewSizeRatio, fov_deg));
+        camera_top_.parameter.SetIntrinsic(static_cast<int32_t>(width * kTopViewSizeRatio), static_cast<int32_t>(height * kTopViewSizeRatio), CameraModel::FocalLength(static_cast<int32_t>(width * kTopViewSizeRatio), fov_deg));
     }
     camera_real_.parameter.SetExtrinsic(
         { 0.0f, 0.0f, 0.0f },    /* rvec [deg] */
         { 0.0f, 1.5f, 0.0f });   /* tvec */
     camera_top_.parameter.SetExtrinsic(
         { 90.0f, 0.0f, 0.0f },    /* rvec [deg] */
-        { 0.0f, 8.0f, 5.0f });   /* tvec */  /* tvec is in camera coordinate, so Z is height because pitch = 90 */
+        { 0.0f, 11.0f, 8.0f });   /* tvec */  /* tvec is in camera coordinate, so Z is height because pitch = 90 */
     CreateTransformMat();
     vanishment_y_ = std::max(0, std::min(height, camera_real_.EstimateVanishmentY()));
 }
@@ -311,4 +311,24 @@ void ImageProcessor::CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_
     mat_topview = cv::Mat(cv::Size(camera_top_.parameter.width, camera_top_.parameter.height), CV_8UC3, COLOR_BG);
     //cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
     cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_NEAREST, cv::BORDER_TRANSPARENT);
+
+#if 1
+    /* Display Grid lines */
+    static constexpr int32_t kDepthInterval = 5;
+    static constexpr int32_t kHorizontalRange = 10;
+    std::vector<cv::Point3f> object_point_list;
+    for (float z = 0; z <= 30; z += kDepthInterval) {
+        object_point_list.push_back(cv::Point3f(-kHorizontalRange, 0, z));
+        object_point_list.push_back(cv::Point3f(kHorizontalRange, 0, z));
+    }
+    std::vector<cv::Point2f> image_point_list;
+    cv::projectPoints(object_point_list, camera_top_.parameter.rvec, camera_top_.parameter.tvec, camera_top_.parameter.K, camera_top_.parameter.dist_coeff, image_point_list);
+    for (int32_t i = 0; i < static_cast<int32_t>(image_point_list.size()); i++) {
+        if (i % 2 != 0) {
+            cv::line(mat_topview, image_point_list[i - 1], image_point_list[i], cv::Scalar(255, 255, 255));
+        } else {
+            CommonHelper::DrawText(mat_topview, std::to_string(i / 2 * kDepthInterval) + "[m]", image_point_list[i], 0.5, 2, CommonHelper::CreateCvColor(0, 0, 0), CommonHelper::CreateCvColor(255, 255, 255), false);
+        }
+    }
+#endif
 }

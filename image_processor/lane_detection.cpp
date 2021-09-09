@@ -60,7 +60,7 @@ int32_t LaneDetection::Finalize()
     return kRetOk;
 }
 
-int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
+int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform, CameraModel& camera)
 {
     /* Run inference to get line (points) */
     LaneEngine::Result lane_result;
@@ -91,18 +91,34 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
         topview_line_list_.push_back(topview_line);
     }
 
+    /* Convert to ground plane */
+    ground_line_list_.clear();
+    for (const auto& line : normal_line_list_) {
+        std::vector<cv::Point2f> ground_line;
+        for (const auto& p : line) {
+            cv::Point3f object_point;
+            camera.ProjectImage2GroundPlane(p, object_point);
+            ground_line.push_back({ object_point.z, object_point.x });
+        }
+        ground_line_list_.push_back(ground_line);
+    }
 
     /* Curve Fitting (y = ax^2 + bx + c, where y = depth, x = horizontal) */
     std::vector<LineCoeff> current_line_coeff_list;
     std::vector<bool> current_line_valid_list;
-    for (auto line : topview_line_list_) {
-        for (auto& p : line) std::swap(p.x, p.y);
+    for (auto line : ground_line_list_) {
         double a = 0, b = 0, c = 0;
         if (line.size() > 2) {
             /* At first, try to use linear regression. In case it's not enough(error is big), use quadratic regression */
             (void)CurveFitting::SolveLinearRegression(line, b, c);
-            if (CurveFitting::ErrorMaxLinearRegression(line, b, c) > 5 && line.size() > 4) {
+            if (CurveFitting::ErrorMaxLinearRegression(line, b, c) > 0.3 && line.size() > 4) {
                 (void)CurveFitting::SolveQuadraticRegression(line, a, b, c);
+                if (CurveFitting::ErrorMaxQuadraticRegression(line, a, b, c) > 0.3) {
+                    /* line is invalid when error is huge */
+                    a = 0;
+                    b = 0;
+                    c = 0;
+                }
             }
         }
         current_line_coeff_list.push_back({ a, b, c });
@@ -117,7 +133,6 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
         line_coeff_list_ = current_line_coeff_list;
         line_valid_list_ = current_line_valid_list;
         line_det_cnt_list_.resize(topview_line_list_.size());
-        y_draw_start_list_.resize(topview_line_list_.size(), 9999);
     }
 
     /* Update coeff with smoothing */
@@ -157,21 +172,10 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
         }
     }
 
-    /* Store line start position */
-    for (int32_t line_index = 0; line_index < static_cast<int32_t>(topview_line_list_.size()); line_index++) {
-        const auto& line = topview_line_list_[line_index];
-        if (current_line_valid_list[line_index]) {
-            float y_top = line[0].y;
-            float y_bottom = line[line.size() - 1].y;
-            float length = std::abs(y_bottom - y_top);
-            y_draw_start_list_[line_index] = (std::max)(static_cast<int32_t>(y_top - length * 0.5), 0);
-        }
-    }
-
     return kRetOk;
 }
 
-void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
+void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview, CameraModel& camera)
 {
     /*** Draw on NormalView ***/
     /* draw points */
@@ -192,16 +196,20 @@ void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview)
     }
 
     /* draw line */
-    static constexpr int32_t kLineIntervalPx = 5;
-    for (int32_t line_index = 0; line_index < static_cast<int32_t>(topview_line_list_.size()); line_index++) {
+    static constexpr float kLineIntervalMeter = 0.5f;
+    static constexpr float kLineFarthestPointMeter = 20.0f;
+    for (int32_t line_index = 0; line_index < static_cast<int32_t>(line_coeff_list_.size()); line_index++) {
         const auto& coeff = line_coeff_list_[line_index];
         if (line_valid_list_[line_index]) {
-            for (int32_t y = y_draw_start_list_[line_index]; y < mat.rows - kLineIntervalPx; y += kLineIntervalPx) {
-                int32_t y0 = y;
-                int32_t y1 = y + kLineIntervalPx;
-                int32_t x0 = static_cast<int32_t>(coeff.a * y0 * y0 + coeff.b * y0 + coeff.c);
-                int32_t x1 = static_cast<int32_t>(coeff.a * y1 * y1 + coeff.b * y1 + coeff.c);
-                cv::line(mat_topview, cv::Point(x0, y0), cv::Point(x1, y1), GetColorForLine(line_index), 2);
+            std::vector<cv::Point2f> image_point_list;
+            for (float z = 0; z < kLineFarthestPointMeter; z += kLineIntervalMeter) {
+                float x = static_cast<float>(coeff.a * z * z + coeff.b * z + coeff.c);
+                cv::Point2f image_point;
+                camera.ProjectWorld2Image({ x, 0, z }, image_point);
+                image_point_list.push_back(image_point);
+            }
+            for (int32_t i = 0; i < static_cast<int32_t>(image_point_list.size()) - 1; i++) {
+                cv::line(mat_topview, image_point_list[i], image_point_list[i + 1], GetColorForLine(line_index), 2);
             }
         }
     }

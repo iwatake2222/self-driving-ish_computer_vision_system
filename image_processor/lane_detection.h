@@ -28,6 +28,7 @@ limitations under the License.
 
 /* for My modules */
 #include "lane_engine.h"
+#include "camera_model.h"
 
 class LaneDetection {
 public:
@@ -39,7 +40,7 @@ public:
 private:
     typedef struct LineCoeff_ {
         /* y = a * x^2 + b * x + c */
-        /*   y = depth, x = horizontal on top view image */
+        /*   y = depth, x = horizontal in world coordinate (ground plane) */
         double a;
         double b;
         double c;
@@ -52,8 +53,8 @@ public:
     ~LaneDetection() {}
     int32_t Initialize(const std::string& work_dir, const int32_t num_threads);
     int32_t Finalize(void);
-    int32_t Process(const cv::Mat& mat, const cv::Mat& mat_transform);
-    void Draw(cv::Mat& mat, cv::Mat& mat_topview);
+    int32_t Process(const cv::Mat& mat, const cv::Mat& mat_transform, CameraModel& camera);
+    void Draw(cv::Mat& mat, cv::Mat& mat_topview, CameraModel& camera);
     double GetTimePreProcess() { return time_pre_process_; };
     double GetTimeInference() { return time_inference_; };
     double GetTimePostProcess() { return time_post_process_; };
@@ -66,10 +67,10 @@ private:
 
     std::vector<std::vector<cv::Point2f>> normal_line_list_;
     std::vector<std::vector<cv::Point2f>> topview_line_list_;
+    std::vector<std::vector<cv::Point2f>> ground_line_list_;    /* x = depth, y = horizontal */
     std::vector<LineCoeff> line_coeff_list_;
     std::vector<bool> line_valid_list_;
     std::vector<int32_t> line_det_cnt_list_;
-    std::vector<int32_t> y_draw_start_list_;
 
     double time_pre_process_;    // [msec]
     double time_inference_;      // [msec]

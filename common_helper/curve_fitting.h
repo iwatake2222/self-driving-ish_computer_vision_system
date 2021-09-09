@@ -132,6 +132,33 @@ public:
 
         return true;
     }
+
+    template <typename T = int32_t>
+    static double ErrorAvgQuadraticRegression(const std::vector<cv::Point_<T>>& point_list, double a, double b, double c)
+    {
+        double error = 0;
+        for (const auto& p : point_list) {
+            double y = p.y;
+            double y_est = a * p.x * p.x + b * p.x + c;
+            error += std::abs(y - y_est);
+        }
+
+        error /= point_list.size();
+        return error;
+    }
+
+    template <typename T = int32_t>
+    static double ErrorMaxQuadraticRegression(const std::vector<cv::Point_<T>>& point_list, double a, double b, double c)
+    {
+        double error = 0;
+        for (const auto& p : point_list) {
+            double y = p.y;
+            double y_est = a * p.x * p.x + b * p.x + c;
+            error = std::max(error, std::abs(y - y_est));
+        }
+
+        return error;
+    }
 };
 
 
