@@ -28,8 +28,7 @@ limitations under the License.
 /* for My modules */
 #include "image_processor_if.h"
 #include "camera_model.h"
-#include "detection_engine.h"
-#include "tracker.h"
+#include "object_detection.h"
 #include "lane_detection.h"
 #include "semantic_segmentation_engine.h"
 #include "depth_engine.h"
@@ -53,11 +52,9 @@ public:
 
 private:
     void DrawFps(cv::Mat& mat, double time_inference, double time_draw, cv::Point pos, double font_scale, int32_t thickness, cv::Scalar color_front, cv::Scalar color_back, bool is_text_on_rect = true);
-    cv::Scalar GetColorForId(int32_t id);
     cv::Scalar GetColorForSegmentation(int32_t id);
     void CreateTransformMat();
     void CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_topview);
-    void DrawObjectDetection(cv::Mat& mat, cv::Mat& mat_topview, const DetectionEngine::Result& det_result);
     void DrawSegmentation(cv::Mat& mat_segmentation, const SemanticSegmentationEngine::Result& segmentation_result);
     void DrawDepth(cv::Mat& mat, const DepthEngine::Result& depth_result);
 
@@ -69,12 +66,10 @@ private:
     cv::Mat mat_transform_;
     int32_t vanishment_y_;
 
-    DetectionEngine detection_engine_;
-    Tracker tracker_;
+    ObjectDetection object_detection_;
     LaneDetection lane_detection_;
     SemanticSegmentationEngine segmentation_engine_;
     DepthEngine depth_engine_;
-
 };
 
 #endif

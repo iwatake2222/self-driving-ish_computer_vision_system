@@ -91,7 +91,7 @@ static void loop_param(std::unique_ptr<ImageProcessorIf>& image_processor)
         MAKE_GUI_SETTING_FLOAT(top_rvec[2], "Roll", 1.0f, "%.0Lf", -100.0f, 100.0f);
 
         cvui::text("Real Camera Parameter (Extrinsic)");
-        MAKE_GUI_SETTING_FLOAT(real_tvec[1], "Height", 1.0f, "%.0Lf", 0.0f, 10.0f);
+        MAKE_GUI_SETTING_FLOAT(real_tvec[1], "Height", 0.1f, "%.1Lf", 0.0f, 10.0f);
 
         MAKE_GUI_SETTING_FLOAT(real_rvec[0], "Pitch", 1.0f, "%.0Lf", -100.0f, 100.0f);
         MAKE_GUI_SETTING_FLOAT(real_rvec[1], "Yaw", 1.0f, "%.0Lf", -100.0f, 100.0f);

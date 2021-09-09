@@ -41,7 +41,12 @@ public:
         struct {
             int32_t x;
             int32_t y;
-        } topview;
+        } topview_point;
+        struct {
+            float x;
+            float y;
+            float z;
+        } object_point;
     } Data;
 
 public:

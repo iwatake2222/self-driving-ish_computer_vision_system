@@ -9,6 +9,7 @@ add_library (${LibraryName} image_processor.cpp image_processor.h image_processo
     semantic_segmentation_engine.cpp semantic_segmentation_engine.h
     depth_engine.cpp depth_engine.h
     lane_detection.cpp lane_detection.h
+    object_detection.cpp object_detection.h
 )
 
 # Sub modules

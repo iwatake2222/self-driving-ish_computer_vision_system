@@ -13,6 +13,7 @@ set(SRC
     kalman_filter.h
     tracker.h tracker.cpp
     camera_model.h
+    curve_fitting.h
 )
 
 if(COMMON_HELPER_WITH_OPENCV)

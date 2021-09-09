@@ -67,9 +67,9 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform)
     if (lane_engine_.Process(mat, lane_result) != LaneEngine::kRetOk) {
         return kRetErr;
     }
-    time_pre_process = lane_result.time_pre_process;
-    time_inference = lane_result.time_inference;
-    time_post_process = lane_result.time_post_process;
+    time_pre_process_ = lane_result.time_pre_process;
+    time_inference_ = lane_result.time_inference;
+    time_post_process_ = lane_result.time_post_process;
 
     /* Save result as points */
     normal_line_list_.clear();
