@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-set(LibraryName "detection_topview_image_processor")
+set(LibraryName "ImageProcessor")
 
 # Create library
 add_library (${LibraryName} image_processor.cpp image_processor.h image_processor_if.cpp image_processor_if.h
@@ -11,11 +11,16 @@ add_library (${LibraryName} image_processor.cpp image_processor.h image_processo
     lane_information.cpp lane_information.h
 )
 
-# OpenCV
+# Sub modules
+## CommonHelper
+target_include_directories(${LibraryName} PUBLIC ${PROJECT_SOURCE_DIR}/common_helper)
+target_link_libraries(${LibraryName} CommonHelper)
+
+## InferenceHelper
+target_include_directories(${LibraryName} PUBLIC ${INFERENCE_HELPER_DIR}/inference_helper)
+target_link_libraries(${LibraryName} InferenceHelper)
+
+## OpenCV
 find_package(OpenCV REQUIRED)
 target_include_directories(${LibraryName} PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(${LibraryName} ${OpenCV_LIBS})
-
-# Link Common Module
-target_link_libraries(${LibraryName} CommonHelper)
-target_link_libraries(${LibraryName} InferenceHelper)
