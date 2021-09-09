@@ -47,37 +47,31 @@ limitations under the License.
 #endif
 
 #if defined(MODEL_TYPE_TFLITE)
-#if 0
-#define MODEL_NAME  "lite-model_midas_v2_1_small_1_lite_1.tflite"
-#define INPUT_NAME  "Const"
-#define INPUT_DIMS  { 1, 256, 256, 3 }
+#define MODEL_NAME  "LDRN_KITTI_ResNext101_256_512_sim.tflite"
+#define INPUT_NAME  "input.1"
+#define INPUT_DIMS  { 1, 256, 512, 3 }
 #define IS_NCHW     false
 #define IS_RGB      true
-#define OUTPUT_NAME "midas_net_custom/sequential/re_lu_9/Relu"
+#define OUTPUT_NAME "2499"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
-#else
-/* https://github.com/PINTO0309/PINTO_model_zoo/blob/main/081_MiDaS_v2/download_256x256.sh */
-#define MODEL_NAME  "midasv2_small_256x256.tflite"
-#define INPUT_NAME  "0"
-#define INPUT_DIMS  { 1, 256, 256, 3 }
-#define IS_NCHW     false
-#define IS_RGB      true
-#define OUTPUT_NAME "Identity"
-#define TENSORTYPE  TensorInfo::kTensorTypeFp32
-#endif
 #elif defined(MODEL_TYPE_ONNX)
-#define MODEL_NAME  "midasv2_small_256x256.onnx"
-#define INPUT_NAME  "inputs:0"
-#define INPUT_DIMS  { 1, 256, 256, 3 }
-#define IS_NCHW     false
+#define MODEL_NAME  "LDRN_KITTI_ResNext101_256_512_sim.onnx"
+#define INPUT_NAME  "input.1"
+#define INPUT_DIMS  { 1, 3, 256, 512 }
+#define IS_NCHW     true
 #define IS_RGB      true
-#define OUTPUT_NAME "Identity:0"
+#define OUTPUT_NAME "2499"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
 #endif
 
 /*** Function ***/
 int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_threads)
 {
+#if defined(MODEL_TYPE_TFLITE)
+    /* not supported */
+    return kRetOk;
+#endif
+
     /* Set model information */
     std::string model_filename = work_dir + "/model/" + MODEL_NAME;
 
@@ -86,7 +80,7 @@ int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_t
     InputTensorInfo input_tensor_info(INPUT_NAME, TENSORTYPE, IS_NCHW);
     input_tensor_info.tensor_dims = INPUT_DIMS;
     input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
-    input_tensor_info.normalize.mean[0] = 0.485f;   	/* https://github.com/onnx/models/tree/master/vision/classification/mobilenet#preprocessing */
+    input_tensor_info.normalize.mean[0] = 0.485f;
     input_tensor_info.normalize.mean[1] = 0.456f;
     input_tensor_info.normalize.mean[2] = 0.406f;
     input_tensor_info.normalize.norm[0] = 0.229f;
@@ -127,6 +121,11 @@ int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_t
 
 int32_t DepthEngine::Finalize()
 {
+#if defined(MODEL_TYPE_TFLITE)
+    /* not supported */
+    return kRetOk;
+#endif
+
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;
@@ -138,6 +137,11 @@ int32_t DepthEngine::Finalize()
 
 int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
 {
+#if defined(MODEL_TYPE_TFLITE)
+    /* not supported */
+    return kRetOk;
+#endif
+
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;
@@ -146,14 +150,13 @@ int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
     const auto& t_pre_process0 = std::chrono::steady_clock::now();
     InputTensorInfo& input_tensor_info = input_tensor_info_list_[0];
     /* do resize and color conversion here because some inference engine doesn't support these operations */
+    float ratio = static_cast<float>(input_tensor_info.GetWidth()) / input_tensor_info.GetHeight();
     int32_t crop_x = 0;
-    int32_t crop_y = 0;
     int32_t crop_w = original_mat.cols;
-    int32_t crop_h = original_mat.rows;
+    int32_t crop_h = static_cast<int32_t>(crop_w / ratio);
+    int32_t crop_y = (original_mat.rows - crop_h) / 2;
     cv::Mat img_src = cv::Mat::zeros(input_tensor_info.GetHeight(), input_tensor_info.GetWidth(), CV_8UC3);
-    //CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeStretch);
-    //CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeCut);
-    CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeExpand);
+    CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeStretch);
 
     input_tensor_info.data = img_src.data;
     input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
@@ -181,24 +184,22 @@ int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
     /*** PostProcess ***/
     const auto& t_post_process0 = std::chrono::steady_clock::now();
     /* Retrieve the result */
-    int32_t output_height = output_tensor_info_list_[0].tensor_dims[1];
-    int32_t output_width = output_tensor_info_list_[0].tensor_dims[2];
+    int32_t output_height = output_tensor_info_list_[0].tensor_dims[2];
+    int32_t output_width = output_tensor_info_list_[0].tensor_dims[3];
     int32_t output_channel = 1;
     float* values = output_tensor_info_list_[0].GetDataAsFloat();
     //printf("%f, %f, %f\n", values[0], values[100], values[400]);
     cv::Mat mat_out = cv::Mat(output_height, output_width, CV_32FC1, values);  /* value has no specific range */
-    
-    /* (255 * (prediction - depth_min) / (depth_max - depth_min)) */
-    double depth_min, depth_max;
-    cv::minMaxLoc(mat_out, &depth_min, &depth_max);
-    mat_out.convertTo(mat_out, CV_8UC1, 255. / (depth_max - depth_min), (-255. * depth_min) / (depth_max - depth_min));
+
+    //double depth_min, depth_max;
+    //cv::minMaxLoc(mat_out, &depth_min, &depth_max);
+    //mat_out.convertTo(mat_out, CV_8UC1, 255. / (depth_max - depth_min), (-255. * depth_min) / (depth_max - depth_min));
+    //mat_out.convertTo(mat_out, CV_8UC1);
+    mat_out.convertTo(mat_out, CV_8UC1, -5, 255);   /* experimentally deterined */
+    mat_out = mat_out(cv::Rect(0, static_cast<int32_t>(mat_out.rows * 0.18), mat_out.cols, static_cast<int32_t>(mat_out.rows * (1.0 - 0.18))));
     const auto& t_post_process1 = std::chrono::steady_clock::now();
 
     /* Return the results */
-    result.crop.x = crop_x;
-    result.crop.y = crop_y;
-    result.crop.w = crop_w;
-    result.crop.h = crop_h;
     result.mat_out = mat_out;
     result.time_pre_process = static_cast<std::chrono::duration<double>>(t_pre_process1 - t_pre_process0).count() * 1000.0;
     result.time_inference = static_cast<std::chrono::duration<double>>(t_inference1 - t_inference0).count() * 1000.0;

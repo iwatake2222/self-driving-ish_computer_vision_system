@@ -192,22 +192,9 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
 
 void ImageProcessor::DrawDepth(cv::Mat& mat, const DepthEngine::Result& depth_result)
 {
-    float scale_w = static_cast<float>(depth_result.mat_out.cols) / depth_result.crop.w;
-    float scale_h = static_cast<float>(depth_result.mat_out.rows) / depth_result.crop.h;
-    cv::Rect crop = cv::Rect(depth_result.crop.x, depth_result.crop.y, depth_result.crop.w, depth_result.crop.h);
-    if (crop.x < 0) {
-        crop.x *= -1;
-        crop.width -= 2 * crop.x;
+    if (!depth_result.mat_out.empty()) {
+        cv::applyColorMap(depth_result.mat_out, mat, cv::COLORMAP_PLASMA);
     }
-    if (crop.y < 0) {
-        crop.y *= -1;
-        crop.height -= 2 * crop.y;
-    }
-    crop.x = static_cast<int32_t>(crop.x * scale_w);
-    crop.width = static_cast<int32_t>(crop.width * scale_w);
-    crop.y = static_cast<int32_t>(crop.y * scale_h);
-    crop.height = static_cast<int32_t>(crop.height * scale_h);
-    cv::applyColorMap(depth_result.mat_out(crop), mat, cv::COLORMAP_JET);
 }
 
 void ImageProcessor::DrawSegmentation(cv::Mat& mat_segmentation, const SemanticSegmentationEngine::Result& segmentation_result)

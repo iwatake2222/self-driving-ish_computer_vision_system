@@ -38,13 +38,6 @@ public:
     };
 
     typedef struct Result_ {
-        struct crop_ {
-            int32_t x;
-            int32_t y;
-            int32_t w;
-            int32_t h;
-            crop_() : x(0), y(0), w(0), h(0) {}
-        } crop;
         cv::Mat           mat_out;              // [height, width, 1]. value is 0 - 255
         double            time_pre_process;		// [msec]
         double            time_inference;		// [msec]
