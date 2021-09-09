@@ -130,6 +130,12 @@ int32_t SemanticSegmentationEngine::Finalize()
     return kRetOk;
 }
 
+static cv::Vec3b GetColorForSegmentation[4] = {
+    { 70,  70,  70},
+    {255,   0,   0},
+    {  0, 255,   0},
+    {  0,   0, 255},
+};
 
 int32_t SemanticSegmentationEngine::Process(const cv::Mat& original_mat, Result& result)
 {
@@ -184,6 +190,8 @@ int32_t SemanticSegmentationEngine::Process(const cv::Mat& original_mat, Result&
     float* output_raw_data = static_cast<float*>(output_tensor_info_list_[0].data);
 
     std::vector<cv::Mat> image_fp32_list;
+    cv::Mat image_combined = cv::Mat::zeros(cv::Size(output_width, output_height), CV_8UC3);
+#if 0
     for (int32_t i = 0; i < output_channel; i++) image_fp32_list.push_back(cv::Mat(output_height, output_width, CV_32FC1));
 
 #pragma omp parallel for num_threads(num_threads_)
@@ -193,11 +201,24 @@ int32_t SemanticSegmentationEngine::Process(const cv::Mat& original_mat, Result&
                 image_fp32_list[c].at<float>(cv::Point(x,y)) = output_raw_data[y * (output_width * output_channel) + x * output_channel + c];
             }
         }
-    }    
+    }
+#else
+#pragma omp parallel for
+    for (int32_t y = 0; y < output_height; y++) {
+        for (int32_t x = 0; x < output_width; x++) {
+            float *score = &output_raw_data[y * (output_width * output_channel) + x * output_channel + 0];
+            uint8_t b = static_cast<uint8_t>(score[0] * 70 + score[1] * 255 + score[2] * 0 + score[3] * 0);
+            uint8_t g = static_cast<uint8_t>(score[0] * 70 + score[1] * 0 + score[2] * 255 + score[3] * 0);
+            uint8_t r = static_cast<uint8_t>(score[0] * 70 + score[1] * 0 + score[2] * 0 + score[3] * 255);
+            image_combined.at<cv::Vec3b>(cv::Point(x, y)) = { b, g, r };
+        }
+    }
+#endif
     const auto& t_post_process1 = std::chrono::steady_clock::now();
 
     /* Return the results */
     result.image_list = image_fp32_list;
+    result.image_combined = image_combined;
     result.crop.x = (std::max)(0, crop_x);
     result.crop.y = (std::max)(0, crop_y);
     result.crop.w = (std::min)(crop_w, original_mat.cols - result.crop.x);

@@ -39,6 +39,7 @@ public:
 
     typedef struct Result_ {
         std::vector<cv::Mat> image_list;                // [height, width, 1]. value is 0 - 1.0 (FP32)
+        cv::Mat image_combined;                // [height, width, 3]. 8UC3
         struct crop_ {
             int32_t x;
             int32_t y;

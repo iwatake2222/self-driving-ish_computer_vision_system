@@ -49,6 +49,8 @@ limitations under the License.
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 #define COLOR_BG  CommonHelper::CreateCvColor(70, 70, 70)
+static constexpr float kTopViewSizeRatio = 0.5f;
+
 
 /*** Global variable ***/
 
@@ -200,20 +202,24 @@ void ImageProcessor::DrawDepth(cv::Mat& mat, const DepthEngine::Result& depth_re
 void ImageProcessor::DrawSegmentation(cv::Mat& mat_segmentation, const SemanticSegmentationEngine::Result& segmentation_result)
 {
     /* Draw on NormalView */
-    std::vector<cv::Mat> mat_segmentation_list(4, cv::Mat());
+    if (!segmentation_result.image_combined.empty()) {
+        mat_segmentation = segmentation_result.image_combined;
+    } else {
+        std::vector<cv::Mat> mat_segmentation_list(4, cv::Mat());
 #pragma omp parallel for
-    for (int32_t i = 0; i < static_cast<int32_t>(segmentation_result.image_list.size()); i++) {
-        cv::Mat mat_fp32_3;
-        cv::cvtColor(segmentation_result.image_list[i], mat_fp32_3, cv::COLOR_GRAY2BGR); /* 1channel -> 3 channel */
-        cv::multiply(mat_fp32_3, GetColorForSegmentation(i), mat_fp32_3);
-        mat_fp32_3.convertTo(mat_fp32_3, CV_8UC3, 1, 0);
-        mat_segmentation_list[i] = mat_fp32_3;
-    }
+        for (int32_t i = 0; i < static_cast<int32_t>(segmentation_result.image_list.size()); i++) {
+            cv::Mat mat_fp32_3;
+            cv::cvtColor(segmentation_result.image_list[i], mat_fp32_3, cv::COLOR_GRAY2BGR); /* 1channel -> 3 channel */
+            cv::multiply(mat_fp32_3, GetColorForSegmentation(i), mat_fp32_3);
+            mat_fp32_3.convertTo(mat_fp32_3, CV_8UC3, 1, 0);
+            mat_segmentation_list[i] = mat_fp32_3;
+        }
 
-//#pragma omp parallel for  /* don't use */
-    mat_segmentation = cv::Mat::zeros(mat_segmentation_list[0].size(), CV_8UC3);
-    for (int32_t i = 0; i < static_cast<int32_t>(mat_segmentation_list.size()); i++) {
-        cv::add(mat_segmentation, mat_segmentation_list[i], mat_segmentation);
+        //#pragma omp parallel for  /* don't use */
+        mat_segmentation = cv::Mat::zeros(mat_segmentation_list[0].size(), CV_8UC3);
+        for (int32_t i = 0; i < static_cast<int32_t>(mat_segmentation_list.size()); i++) {
+            cv::add(mat_segmentation, mat_segmentation_list[i], mat_segmentation);
+        }
     }
 }
 
@@ -249,7 +255,7 @@ void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
 {
     if (width > 0 && height > 0 && fov_deg > 0) {
         camera_real_.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
-        camera_top_.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
+        camera_top_.parameter.SetIntrinsic(width * kTopViewSizeRatio, height * kTopViewSizeRatio, CameraModel::FocalLength(width * kTopViewSizeRatio, fov_deg));
     }
     camera_real_.parameter.SetExtrinsic(
         { 0.0f, 0.0f, 0.0f },    /* rvec [deg] */
@@ -272,8 +278,8 @@ void ImageProcessor::SetCameraParameter(float focal_length, const std::array<flo
 {
     camera_real_.parameter.fx() = focal_length;
     camera_real_.parameter.fy() = focal_length;
-    camera_top_.parameter.fx() = focal_length;
-    camera_top_.parameter.fy() = focal_length;
+    camera_top_.parameter.fx() = focal_length * kTopViewSizeRatio;
+    camera_top_.parameter.fy() = focal_length * kTopViewSizeRatio;
     camera_real_.parameter.SetExtrinsic(real_rvec, real_tvec);
     camera_top_.parameter.SetExtrinsic(top_rvec, top_tvec);
     CreateTransformMat();
@@ -302,7 +308,7 @@ void ImageProcessor::CreateTransformMat()
 void ImageProcessor::CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_topview)
 {
     /* Perspective Transform */   
-    mat_topview = cv::Mat(mat_original.size(), CV_8UC3, COLOR_BG);
-    cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
-    //mat_topview = mat_topview(cv::Rect(0, 360, 1280, 360));
+    mat_topview = cv::Mat(cv::Size(camera_top_.parameter.width, camera_top_.parameter.height), CV_8UC3, COLOR_BG);
+    //cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
+    cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_NEAREST, cv::BORDER_TRANSPARENT);
 }
