@@ -49,7 +49,7 @@ limitations under the License.
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 #define COLOR_BG  CommonHelper::CreateCvColor(70, 70, 70)
-static constexpr float kTopViewSizeRatio = 0.75f;
+static constexpr float kTopViewSizeRatio = 1.0f;
 
 
 /*** Global variable ***/
@@ -184,9 +184,9 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
     result.mat_output_segmentation = mat_segmentation;
     result.mat_output_depth = mat_depth;
     result.mat_output_topview = mat_topview;
-    result.time_pre_process = lane_detection_.GetTimePreProcess() + lane_detection_.GetTimePreProcess() + segmentation_result.time_pre_process + depth_result.time_pre_process;
-    result.time_inference = lane_detection_.GetTimeInference() + lane_detection_.GetTimeInference() + segmentation_result.time_inference + depth_result.time_inference;
-    result.time_post_process = lane_detection_.GetTimePostProcess() + lane_detection_.GetTimePostProcess() + segmentation_result.time_post_process + depth_result.time_post_process;
+    result.time_pre_process = object_detection_.GetTimePreProcess() + lane_detection_.GetTimePreProcess() + segmentation_result.time_pre_process + depth_result.time_pre_process;
+    result.time_inference = object_detection_.GetTimeInference() + lane_detection_.GetTimeInference() + segmentation_result.time_inference + depth_result.time_inference;
+    result.time_post_process = object_detection_.GetTimePostProcess() + lane_detection_.GetTimePostProcess() + segmentation_result.time_post_process + depth_result.time_post_process;
 
     return kRetOk;
 }

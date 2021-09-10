@@ -113,16 +113,18 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
 | Model  | Jetson Xavier NX | GTX 1070 |
 | ------ | ---------------: | -------: |
 | == Inference time ==                 |
-|  OD    |           9.2 ms |   9.2 ms |
-|  Lane  |           7.6 ms |   7.6 ms |
-|  Road  |          27.7 ms |  27.7 ms |
-|  Depth |          54.7 ms |  54.7 ms |
+|  OD    |          10.6 ms |   6.4 ms |
+|  Lane  |           9.6 ms |   4.9 ms |
+|  Road  |          29.1 ms |  13.5 ms |
+|  Depth |          55.2 ms |  37.8 ms |
 | == FPS ==                            |
-|  Total |         10.0 fps | 10.0 fps |
+|  Total |          7.1 fps | 10.9 fps |
 
+* Input
+    - Jetson Xavier NX: Camera
+    - GTX 1070: mp4 video
 * With TensorRT FP16
 * "Total" includes image read, pre/post process, other image process, result image drawing, etc.
-
 
 # License
 - Copyright 2021 iwatake2222
@@ -138,47 +140,32 @@ I utilized the following OSS in this project. I appreciate your great works, tha
     - https://github.com/tensorflow/tensorflow
     - Copyright 2019 The TensorFlow Authors
     - Licensed under the Apache License, Version 2.0
-    - Generated pre-built library from this project
+    - Generated pre-built library using this project
 - TensorRT
     - https://github.com/nvidia/TensorRT
     - Copyright 2020 NVIDIA Corporation
     - Licensed under the Apache License, Version 2.0
-    - Cited source code
+    - Copied source code
 - cvui
     - https://github.com/Dovyski/cvui
     - Copyright (c) 2016 Fernando Bevilacqua
     - Licensed under the MIT License (MIT)
-    - Cited source code
+    - Copied source code
+
 ## Model
 - PINTO_model_zoo
     - https://github.com/PINTO0309/PINTO_model_zoo
     - Copyright (c) 2019 Katsuya Hyodo
     - Licensed under the MIT License (MIT)
-    - Cited converted model files
+    - Copied converted model files
 - YOLOX
     - https://github.com/Megvii-BaseDetection/YOLOX
     - Copyright (c) Megvii, Inc. and its affiliates. All Rights Reserved
     - Licensed under the Apache License, Version 2.0
-    ```BibTeX
-    @article{yolox2021,
-        title={YOLOX: Exceeding YOLO Series in 2021},
-        author={Ge, Zheng and Liu, Songtao and Wang, Feng and Li, Zeming and Sun, Jian},
-        journal={arXiv preprint arXiv:2107.08430},
-        year={2021}
-    }
-    ```
 - Ultra-Fast-Lane-Detection
     - https://github.com/cfzd/Ultra-Fast-Lane-Detection
     - Copyright (c) 2020 cfzd
     - Licensed under the MIT License (MIT)
-    ```BibTeX
-    @InProceedings{qin2020ultra,
-        author = {Qin, Zequn and Wang, Huanyu and Li, Xi},
-        title = {Ultra Fast Structure-aware Deep Lane Detection},
-        booktitle = {The European Conference on Computer Vision (ECCV)},
-        year = {2020}
-    }
-    ```
 - road-segmentation-adas-0001
     - https://github.com/openvinotoolkit/open_model_zoo/tree/master/models/intel/road-segmentation-adas-0001
     - Copyright (c) 2021 Intel Corporation
@@ -186,18 +173,7 @@ I utilized the following OSS in this project. I appreciate your great works, tha
 - LapDepth-release
     - https://github.com/tjqansthd/LapDepth-release
     - Licensed under the GNU General Public License v3.0
-    ```BibTeX
-    @ARTICLE{9316778,
-        author={M. {Song} and S. {Lim} and W. {Kim}},
-        journal={IEEE Transactions on Circuits and Systems for Video Technology}, 
-        title={Monocular Depth Estimation Using Laplacian Pyramid-Based Depth Residuals}, 
-        year={2021},
-        volume={},
-        number={},
-        pages={1-1},
-        doi={10.1109/TCSVT.2021.3049869}
-    }
-    ```
+
 ## Image
 - OpenCV
     - https://github.com/opencv/opencv

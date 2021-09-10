@@ -92,7 +92,6 @@ int32_t ObjectDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transfor
     }
 
     /* Calcualte points in world coordinate (distance on ground plane) */
-    int32_t vanishment_y = camera.EstimateVanishmentY();
     for (auto& track : track_list) {
         const auto& bbox = track.GetLatestData().bbox;
         auto& object_point_track = track.GetLatestData().object_point;
