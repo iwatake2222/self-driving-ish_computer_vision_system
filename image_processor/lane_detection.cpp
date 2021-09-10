@@ -104,8 +104,8 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform,
     }
 
     /* Curve Fitting (y = ax^2 + bx + c, where y = depth, x = horizontal) */
+    current_line_valid_list_.clear();
     std::vector<LineCoeff> current_line_coeff_list;
-    std::vector<bool> current_line_valid_list;
     for (auto line : ground_line_list_) {
         double a = 0, b = 0, c = 0;
         double error = 999;
@@ -114,11 +114,11 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform,
             (void)CurveFitting::SolveQuadraticRegression(line, a, b, c);
             error = CurveFitting::ErrorMaxQuadraticRegression(line, a, b, c);
         }
-        if (error > 0.3 && line.size() > 2) {
+        if (error > 0.1 && line.size() > 2) {
             /* Use linear regression, if I didn't use quadratic regression or the result of quadratic regression is not good (the maximum error > 0.3m) */
             (void)CurveFitting::SolveLinearRegression(line, b, c);
             error = CurveFitting::ErrorMaxLinearRegression(line, b, c);
-            if (error > 0.3) {
+            if (error > 0.1) {
                 /* Regression failes is error is huge */
                 a = 0;
                 b = 0;
@@ -127,21 +127,21 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform,
         }
         current_line_coeff_list.push_back({ a, b, c });
         if (a == 0 && b == 0 && c == 0) {
-            current_line_valid_list.push_back(false);
+            current_line_valid_list_.push_back(false);
         } else {
-            current_line_valid_list.push_back(true);
+            current_line_valid_list_.push_back(true);
         }
     }
 
     if (line_coeff_list_.empty()) {
         line_coeff_list_ = current_line_coeff_list;
-        line_valid_list_ = current_line_valid_list;
+        line_valid_list_ = current_line_valid_list_;
         line_det_cnt_list_.resize(topview_line_list_.size());
     }
 
     /* Update coeff with smoothing */
     for (int32_t line_index = 0; line_index < static_cast<int32_t>(line_coeff_list_.size()); line_index++) {
-        if (current_line_valid_list[line_index]) {
+        if (current_line_valid_list_[line_index]) {
             float kMixRatio = 0.05f;
             if (!line_valid_list_[line_index]) {
                 kMixRatio = 1.0f;   /* detect the line at the first time */
@@ -156,8 +156,8 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform,
     }
 
     /* Check if line is (possibly) valid */
-    for (int32_t line_index = 0; line_index < static_cast<int32_t>(current_line_valid_list.size()); line_index++) {
-        if (current_line_valid_list[line_index]) {
+    for (int32_t line_index = 0; line_index < static_cast<int32_t>(current_line_valid_list_.size()); line_index++) {
+        if (current_line_valid_list_[line_index]) {
             if (line_det_cnt_list_[line_index] < 0) {
                 line_det_cnt_list_[line_index] = 0;
             } else {
@@ -200,20 +200,21 @@ void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview, CameraModel& camera
     }
 
     /* draw line */
-    static constexpr float kLineIntervalMeter = 0.5f;
-    static constexpr float kLineFarthestPointMeter = 20.0f;
+    static constexpr float kLineIntervalMeter = 1.0f;
+    static constexpr float kLineFarthestPointMeter[4] = { 10.0f, 15.0f, 15.0f, 10.0f };
     for (int32_t line_index = 0; line_index < static_cast<int32_t>(line_coeff_list_.size()); line_index++) {
         const auto& coeff = line_coeff_list_[line_index];
         if (line_valid_list_[line_index]) {
-            std::vector<cv::Point2f> image_point_list;
-            for (float z = 0; z < kLineFarthestPointMeter; z += kLineIntervalMeter) {
-                float x = static_cast<float>(coeff.a * z * z + coeff.b * z + coeff.c);
-                cv::Point2f image_point;
-                camera.ProjectWorld2Image({ x, 0, z }, image_point);
-                image_point_list.push_back(image_point);
-            }
-            for (int32_t i = 0; i < static_cast<int32_t>(image_point_list.size()) - 1; i++) {
-                cv::line(mat_topview, image_point_list[i], image_point_list[i + 1], GetColorForLine(line_index), 2);
+            for (float z = 0; z < kLineFarthestPointMeter[line_index]; z += kLineIntervalMeter) {
+                float z0 = z;
+                float z1 = current_line_valid_list_[line_index] ? z + kLineIntervalMeter : z + kLineIntervalMeter / 2;
+                float x0 = static_cast<float>(coeff.a * z0 * z0 + coeff.b * z0 + coeff.c);
+                float x1 = static_cast<float>(coeff.a * z1 * z1 + coeff.b * z1 + coeff.c);
+                cv::Point2f image_point_0;
+                cv::Point2f image_point_1;
+                camera.ProjectWorld2Image({ x0, 0, z0 }, image_point_0);
+                camera.ProjectWorld2Image({ x1, 0, z1 }, image_point_1);
+                cv::line(mat_topview, image_point_0, image_point_1, GetColorForLine(line_index), 2);
             }
         }
     }

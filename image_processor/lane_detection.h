@@ -70,6 +70,7 @@ private:
     std::vector<std::vector<cv::Point2f>> ground_line_list_;    /* x = depth, y = horizontal */
     std::vector<LineCoeff> line_coeff_list_;
     std::vector<bool> line_valid_list_;
+    std::vector<bool> current_line_valid_list_;
     std::vector<int32_t> line_det_cnt_list_;
 
     double time_pre_process_;    // [msec]

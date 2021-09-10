@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 # Create project
-set(ProjectName "DetectionTopView")
+set(ProjectName "main")
 project(${ProjectName})
 
 # Select build system and set compile options

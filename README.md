@@ -6,7 +6,7 @@
     - Object Detection and Tracking
     - Lane Detection and Curve Fitting
     - Road Segmentation
-    - Depth Estimation
+    - Depth Estimation (enabled with TensorRT only)
 - Transform
     - Top View
     - Distance Calculation
@@ -15,16 +15,14 @@
 # Tested Environment
 ## Computer
 - Windows 10 (x64) + Visual Studio 2019
-    - Intel Core i7-6700@3.4GHz + NVIDIA GeForce GTX 1070
+    - Intel Core i7-6700 @ 3.4GHz + NVIDIA GeForce GTX 1070
 - Jetson Xavier NX. JetPack 4.6
 
 ## Deep Learning Inference Framework
 - TensorFlow Lite with XNNPACK delegate
-    - CPU only
+    - CPU
 - TensorRT
     - GPU
-- * Depth esstimation is supported with TensorRT only
-
 
 # How to Build and Run
 ## Requirements
@@ -34,8 +32,8 @@
 ## Common 
 - Get source code
     ```sh
-    git clone https://github.com/iwatake2222/xxx.git
-    cd xxx
+    git clone https://github.com/iwatake2222/self-driving-ish_computer_vision_system.git
+    cd self-driving-ish_computer_vision_system
     git submodule update --init --recursive --recommend-shallow --depth 1
     # You don't need the following lines if you use TensorRT
     cd inference_helper/third_party/tensorflow
@@ -46,15 +44,15 @@
     - Download prebuilt libraries (third_party.zip) from https://github.com/iwatake2222/InferenceHelper/releases/  (<- Not in this repository)
     - Extract it to `inference_helper/third_party/`
 - Download models
-    - Download models (resource.zip) from https://github.com/iwatake2222/xxx/releases/ 
+    - Download models (resource.zip) from https://github.com/iwatake2222/self-driving-ish_computer_vision_system/releases/ 
     - Extract it to `resource/`
 
 ## Windows (Visual Studio)
 - Configure and Generate a new project using cmake-gui for Visual Studio 2019 64-bit
     - `Where is the source code` : path-to-cloned-folder
     - `Where to build the binaries` : path-to-build	(any)
-- Open `xxx.sln`
-- Set `xxx` project as a startup project, then build and run!
+- Open `main.sln`
+- Set `main` project as a startup project, then build and run!
 - Note:
     - Running with `Debug` causes exception, so use `Release` or `RelWithDebInfo` if you use TensorFlow Lite
     - You may need to modify cmake setting for TensorRT for your environment
@@ -114,13 +112,16 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
 ## Performance
 | Model  | Jetson Xavier NX | GTX 1070 |
 | ------ | ---------------: | -------: |
+| == Inference time ==                 |
 |  OD    |           9.2 ms |   9.2 ms |
 |  Lane  |           7.6 ms |   7.6 ms |
 |  Road  |          27.7 ms |  27.7 ms |
 |  Depth |          54.7 ms |  54.7 ms |
+| == FPS ==                            |
 |  Total |         10.0 fps | 10.0 fps |
 
-*"Total" includes image capture, pre/post process, other image process, result image drawing, etc.
+* With TensorRT FP16
+* "Total" includes image read, pre/post process, other image process, result image drawing, etc.
 
 
 # License
@@ -130,6 +131,8 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
 
 
 # Acknowledgements
+I utilized the following OSS in this project. I appreciate your great works, thank you very much.
+
 ## Code, Library
 - TensorFlow
     - https://github.com/tensorflow/tensorflow
@@ -192,7 +195,8 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
         volume={},
         number={},
         pages={1-1},
-        doi={10.1109/TCSVT.2021.3049869}}
+        doi={10.1109/TCSVT.2021.3049869}
+    }
     ```
 ## Image
 - OpenCV

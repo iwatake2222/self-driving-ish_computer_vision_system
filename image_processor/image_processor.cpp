@@ -310,7 +310,7 @@ void ImageProcessor::CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_
     /* Perspective Transform */   
     mat_topview = cv::Mat(cv::Size(camera_top_.parameter.width, camera_top_.parameter.height), CV_8UC3, COLOR_BG);
     //cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
-    cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_NEAREST, cv::BORDER_TRANSPARENT);
+    cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_NEAREST);
 
 #if 1
     /* Display Grid lines */
