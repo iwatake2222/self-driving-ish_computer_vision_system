@@ -1,16 +1,15 @@
-# !!! Under Development !!!
-
 # Self-Driving-ish Computer Vision System
-- This project generates images you often see autonomous driving demo
+- This project generates images you've probably seen in autonomous driving demo
 - Detection
     - Object Detection and Tracking
     - Lane Detection and Curve Fitting
     - Road Segmentation
     - Depth Estimation (enabled with TensorRT only)
-- Transform
-    - Top View
-    - Distance Calculation
+- Transform using Projective Geometry and Pinhole Camera Model
+    - Normal View -> Top View
+    - Distance Calculation (image plane -> ground plane in world coordinate system)
 
+![result](00_doc/result.jpg)
 
 # Tested Environment
 ## Computer
@@ -75,22 +74,25 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
 ## Usage
 ```
 ./main [input]
- - input = blank
-    - use the default image file set in source code (main.cpp)
-    - e.g. ./main
- - input = *.mp4, *.avi, *.webm
-    - use video file
-    - e.g. ./main test.mp4
- - input = *.jpg, *.png, *.bmp
-    - use image file
-    - e.g. ./main test.jpg
- - input = number (e.g. 0, 1, 2, ...)
-    - use camera
-    - e.g. ./main 0
-- input = jetson
-    - use camera via gstreamer on Jetson
-    - e.g. ./main jetson
+ - input:
+    - blank: use the default image file set in source code (main.cpp)
+        - e.g. ./main
+     - *.mp4, *.avi, *.webm: use video file
+        - e.g. ./main test.mp4
+     - *.jpg, *.png, *.bmp: use image file
+        - e.g. ./main test.jpg
+    - number (e.g. 0, 1, 2, ...): use camera
+        - e.g. ./main 0
+    - jetson: use camera via gstreamer on Jetson
+        - e.g. ./main jetson
 ```
+
+# Software Design
+## Class Diagram
+![class_diagram](00_doc/class_diagram.jpg)
+
+## Data Flow
+![data_flow](00_doc/data_flow.jpg)
 
 
 # Model Information
@@ -140,7 +142,7 @@ I utilized the following OSS in this project. I appreciate your great works, tha
     - https://github.com/tensorflow/tensorflow
     - Copyright 2019 The TensorFlow Authors
     - Licensed under the Apache License, Version 2.0
-    - Generated pre-built library using this project
+    - Generated pre-built library
 - TensorRT
     - https://github.com/nvidia/TensorRT
     - Copyright 2020 NVIDIA Corporation
@@ -174,7 +176,7 @@ I utilized the following OSS in this project. I appreciate your great works, tha
     - https://github.com/tjqansthd/LapDepth-release
     - Licensed under the GNU General Public License v3.0
 
-## Image
+## Image Files
 - OpenCV
     - https://github.com/opencv/opencv
     - Licensed under the Apache License, Version 2.0
