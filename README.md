@@ -12,7 +12,12 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
     - Normal View -> Top View
     - Distance Calculation (image plane -> ground plane in world coordinate system)
 
+## Sample Images
+- Full Version: https://youtu.be/GB4p_fjQZNE
+- Short Version: https://youtu.be/OrOb7vdRJlo
+
 ![result](00_doc/result.jpg)
+
 
 # Tested Environment
 ## Computer
@@ -78,17 +83,20 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
 ```
 ./main [input]
  - input:
-    - blank: use the default image file set in source code (main.cpp)
+    - use the default image file set in source code (main.cpp): blank
         - e.g. ./main
-     - *.mp4, *.avi, *.webm: use video file
+     - use video file: *.mp4, *.avi, *.webm
         - e.g. ./main test.mp4
-     - *.jpg, *.png, *.bmp: use image file
+     - use image file: *.jpg, *.png, *.bmp
         - e.g. ./main test.jpg
-    - number (e.g. 0, 1, 2, ...): use camera
+    - use camera: number (e.g. 0, 1, 2, ...)
         - e.g. ./main 0
-    - jetson: use camera via gstreamer on Jetson
+    - use camera via gstreamer on Jetson: jetson
         - e.g. ./main jetson
 ```
+
+## Note
+It will take around 10 - 20 minutes when you execute the app for the first time, because the model conversion runs
 
 # Software Design
 ## Class Diagram
