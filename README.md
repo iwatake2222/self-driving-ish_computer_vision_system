@@ -12,7 +12,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
     - Normal View -> Top View
     - Distance Calculation (image plane -> ground plane in world coordinate system)
 
-## Sample Images
+## Result
 - Full Version: https://youtu.be/GB4p_fjQZNE
 - Short Version: https://youtu.be/OrOb7vdRJlo
 
