@@ -115,7 +115,7 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform,
             error = CurveFitting::ErrorMaxQuadraticRegression(line, a, b, c);
         }
         if (error > 0.1 && line.size() > 2) {
-            /* Use linear regression, if I didn't use quadratic regression or the result of quadratic regression is not good (the maximum error > 0.3m) */
+            /* Use linear regression, if I didn't use quadratic regression or the result of quadratic regression is not good (the maximum error > 0.1m) */
             (void)CurveFitting::SolveLinearRegression(line, b, c);
             error = CurveFitting::ErrorMaxLinearRegression(line, b, c);
             if (error > 0.1) {
@@ -144,9 +144,9 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform,
         if (current_line_valid_list_[line_index]) {
             float kMixRatio = 0.05f;
             if (!line_valid_list_[line_index]) {
-                kMixRatio = 1.0f;   /* detect the line at the first time */
+                kMixRatio = 1.0f;   /* detect the line for the first time */
             } else if (line_det_cnt_list_[line_index] < 10) {
-                kMixRatio = 0.2f;   /* the first few frames after the line is detected at the first time */
+                kMixRatio = 0.2f;   /* the first few frames after the line is detected for the first time */
             }
             auto& line_coeff = line_coeff_list_[line_index];
             line_coeff.a = current_line_coeff_list[line_index].a * kMixRatio + line_coeff.a * (1.0 - kMixRatio);

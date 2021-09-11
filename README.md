@@ -48,10 +48,10 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
     tensorflow/lite/tools/make/download_dependencies.sh
     ```
 - Download prebuilt library (You don't need this step if you use TensorRT)
-    - Download prebuilt libraries (third_party.zip) from https://github.com/iwatake2222/InferenceHelper/releases/  (<- Not in this repository)
+    - Download prebuilt libraries (third_party.zip) from https://github.com/iwatake2222/InferenceHelper/releases/
     - Extract it to `inference_helper/third_party/`
 - Download models
-    - Download models (resource.zip) from https://github.com/iwatake2222/self-driving-ish_computer_vision_system/releases/ 
+    - Download models (resource.zip) from https://github.com/iwatake2222/self-driving-ish_computer_vision_system/releases/
     - Extract it to `resource/`
 
 ## Windows (Visual Studio)
@@ -96,14 +96,14 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
 ```
 
 ## Note
-It will take around 10 - 20 minutes when you execute the app for the first time, because the model conversion runs
+It will take around 10 - 20 minutes when you execute the app for the first time, due to model conversion
 
 # Software Design
 ## Class Diagram
 ![class_diagram](00_doc/class_diagram.jpg)
 
-## Data Flow
-![data_flow](00_doc/data_flow.jpg)
+## Data Flow Diagram
+![data_flow_diagram](00_doc/data_flow_diagram.jpg)
 
 
 # Model Information

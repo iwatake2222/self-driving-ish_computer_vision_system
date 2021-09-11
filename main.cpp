@@ -31,14 +31,13 @@ limitations under the License.
 #include "common_helper_cv.h"
 
 /*** Macro ***/
-#define WORK_DIR                      RESOURCE_DIR
-#define DEFAULT_INPUT_IMAGE           RESOURCE_DIR"/dashcam_00.jpg"
-#define LOOP_NUM_FOR_TIME_MEASUREMENT 10
-//#define SEPARATE_WINDOW
-
+#define WORK_DIR RESOURCE_DIR
+static constexpr char kDefaultInputImage[] = RESOURCE_DIR"/dashcam_00.jpg";
+static constexpr int32_t kLoopNumForTimeMeasurement = 10;
 static constexpr int32_t kNumThread = 4;
 static constexpr int32_t kInputImageSize = 960;
 static constexpr char kOutputVideoFilename[] = "";  /* out.mp4 */
+static constexpr bool kIsSeparateWindow = false;
 static constexpr char kWindowNormal[] = "WindowNormal";
 static constexpr char kWindowTopView[] = "WindowTopView";
 static constexpr char kWindowSegmentation[] = "WindowSegmentation";
@@ -47,7 +46,6 @@ static constexpr char kWindowParam[] = "WindowParam";
 
 
 /*** Global variable ***/
-/* variables for processing time measurement */
 static bool is_pause = false;
 static bool is_process_one_frame = false;
 
@@ -238,7 +236,7 @@ int main(int argc, char* argv[])
     double total_time_image_process = 0;
 
     /* Find source image */
-    std::string input_name = (argc > 1) ? argv[1] : DEFAULT_INPUT_IMAGE;
+    std::string input_name = (argc > 1) ? argv[1] : kDefaultInputImage;
     cv::VideoCapture cap;   /* if cap is not opened, src is still image */
     if (!CommonHelper::FindSourceImage(input_name, cap)) {
         return -1;
@@ -250,7 +248,7 @@ int main(int argc, char* argv[])
     /* Initialize image processor library */
     cv::setNumThreads(kNumThread);
     std::unique_ptr<ImageProcessorIf> image_processor = ImageProcessorIf::Create();
-    ImageProcessorIf::InputParam input_param = { WORK_DIR, kNumThread };
+    ImageProcessorIf::InputParam input_param = { RESOURCE_DIR, kNumThread };
     if (image_processor->Initialize(input_param) != 0) {
         printf("Initialization Error\n");
         return -1;
@@ -258,21 +256,21 @@ int main(int argc, char* argv[])
 
     /* Initialize cvui */
     cvui::init(kWindowNormal);
-#ifdef SEPARATE_WINDOW
-    cvui::init(kWindowTopView);
-    cvui::init(kWindowSegmentation);
-    cvui::init(kWindowDepth);
-    cv::setMouseCallback(kWindowTopView, CallbackMouseMain, image_processor.get());
-#else
-    cv::setMouseCallback(kWindowNormal, CallbackMouseMain, image_processor.get());
-#endif
+    if (kIsSeparateWindow) {
+        cvui::init(kWindowTopView);
+        cvui::init(kWindowSegmentation);
+        cvui::init(kWindowDepth);
+        cv::setMouseCallback(kWindowTopView, CallbackMouseMain, image_processor.get());
+    } else {
+        cv::setMouseCallback(kWindowNormal, CallbackMouseMain, image_processor.get());
+    }
     cvui::init(kWindowParam);
     
 
     /*** Process for each frame ***/
     cv::Mat mat_original;
     int32_t frame_cnt = 0;
-    for (frame_cnt = 0; cap.isOpened() || frame_cnt < LOOP_NUM_FOR_TIME_MEASUREMENT || is_pause; frame_cnt++) {
+    for (frame_cnt = 0; cap.isOpened() || frame_cnt < kLoopNumForTimeMeasurement || is_pause; frame_cnt++) {
         const auto& time_all0 = std::chrono::steady_clock::now();
         /* Read image */
         const auto& time_cap0 = std::chrono::steady_clock::now();
@@ -294,23 +292,23 @@ int main(int argc, char* argv[])
         const auto& time_image_process1 = std::chrono::steady_clock::now();
 
         /* Display result */
-#ifdef SEPARATE_WINDOW
-        cvui::imshow(kWindowNormal, result.mat_output);
-        if (!result.mat_output_topview.empty()) cvui::imshow(kWindowTopView, result.mat_output_topview);
-        if (!result.mat_output_segmentation.empty()) cvui::imshow(kWindowSegmentation, result.mat_output_segmentation);
-        if (!result.mat_output_depth.empty()) cvui::imshow(kWindowDepth, result.mat_output_depth);
-#else
-        cv::Mat mat(cv::Size(result.mat_output.cols + result.mat_output_topview.cols, result.mat_output.rows + result.mat_output_segmentation.rows), CV_8UC3);
-        result.mat_output.copyTo(mat(cv::Rect(0, 0, result.mat_output.cols, result.mat_output.rows)));
-        if (!result.mat_output_topview.empty()) result.mat_output_topview.copyTo(mat(cv::Rect(result.mat_output.cols, 0, result.mat_output_topview.cols, result.mat_output_topview.rows)));
-        if (!result.mat_output_depth.empty()) result.mat_output_depth.copyTo(mat(cv::Rect(result.mat_output.cols, result.mat_output_topview.rows, result.mat_output_depth.cols, result.mat_output_depth.rows)));
-        if (!result.mat_output_segmentation.empty()) result.mat_output_segmentation.copyTo(mat(cv::Rect(0, result.mat_output.rows, result.mat_output_segmentation.cols, result.mat_output_segmentation.rows)));
-        cvui::imshow(kWindowNormal, mat);
-        if (frame_cnt == 0 && kOutputVideoFilename[0] != '\0') {
-            writer = cv::VideoWriter(kOutputVideoFilename, cv::VideoWriter::fourcc('M', 'P', '4', 'V'), (std::max)(10.0, cap.get(cv::CAP_PROP_FPS)), cv::Size(mat.cols, mat.rows));
+        if (kIsSeparateWindow) {
+            cvui::imshow(kWindowNormal, result.mat_output);
+            if (!result.mat_output_topview.empty()) cvui::imshow(kWindowTopView, result.mat_output_topview);
+            if (!result.mat_output_segmentation.empty()) cvui::imshow(kWindowSegmentation, result.mat_output_segmentation);
+            if (!result.mat_output_depth.empty()) cvui::imshow(kWindowDepth, result.mat_output_depth);
+        } else {
+            cv::Mat mat(cv::Size(result.mat_output.cols + result.mat_output_topview.cols, result.mat_output.rows + result.mat_output_segmentation.rows), CV_8UC3);
+            result.mat_output.copyTo(mat(cv::Rect(0, 0, result.mat_output.cols, result.mat_output.rows)));
+            if (!result.mat_output_topview.empty()) result.mat_output_topview.copyTo(mat(cv::Rect(result.mat_output.cols, 0, result.mat_output_topview.cols, result.mat_output_topview.rows)));
+            if (!result.mat_output_depth.empty()) result.mat_output_depth.copyTo(mat(cv::Rect(result.mat_output.cols, result.mat_output_topview.rows, result.mat_output_depth.cols, result.mat_output_depth.rows)));
+            if (!result.mat_output_segmentation.empty()) result.mat_output_segmentation.copyTo(mat(cv::Rect(0, result.mat_output.rows, result.mat_output_segmentation.cols, result.mat_output_segmentation.rows)));
+            cvui::imshow(kWindowNormal, mat);
+            if (frame_cnt == 0 && kOutputVideoFilename[0] != '\0') {
+                writer = cv::VideoWriter(kOutputVideoFilename, cv::VideoWriter::fourcc('M', 'P', '4', 'V'), (std::max)(10.0, cap.get(cv::CAP_PROP_FPS)), cv::Size(mat.cols, mat.rows));
+            }
+            if (writer.isOpened()) writer.write(mat);
         }
-        if (writer.isOpened()) writer.write(mat);
-#endif
 
         /* Parameter control window */
         loop_param(image_processor);
