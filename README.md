@@ -13,8 +13,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
     - Distance Calculation (image plane -> ground plane in world coordinate system)
 
 ## Result
-- Full Version: https://youtu.be/GB4p_fjQZNE
-- Short Version: https://youtu.be/OrOb7vdRJlo
+- YoutTube: https://youtu.be/GB4p_fjQZNE
 
 ![result](00_doc/result.jpg)
 
@@ -35,6 +34,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
 ## Requirements
 - OpenCV 4.x
 - CMake
+- (TensorRT)
 
 ## Common 
 - Get source code
@@ -42,12 +42,11 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
     git clone https://github.com/iwatake2222/self-driving-ish_computer_vision_system.git
     cd self-driving-ish_computer_vision_system
     git submodule update --init --recursive --recommend-shallow --depth 1
-    # You don't need the following lines if you use TensorRT
     cd inference_helper/third_party/tensorflow
     chmod +x tensorflow/lite/tools/make/download_dependencies.sh
     tensorflow/lite/tools/make/download_dependencies.sh
     ```
-- Download prebuilt library (You don't need this step if you use TensorRT)
+- Download prebuilt library
     - Download prebuilt libraries (third_party.zip) from https://github.com/iwatake2222/InferenceHelper/releases/
     - Extract it to `inference_helper/third_party/`
 - Download models
@@ -84,15 +83,15 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
 ./main [input]
  - input:
     - use the default image file set in source code (main.cpp): blank
-        - e.g. ./main
+        - ./main
      - use video file: *.mp4, *.avi, *.webm
-        - e.g. ./main test.mp4
+        - ./main test.mp4
      - use image file: *.jpg, *.png, *.bmp
-        - e.g. ./main test.jpg
+        - ./main test.jpg
     - use camera: number (e.g. 0, 1, 2, ...)
-        - e.g. ./main 0
+        - ./main 0
     - use camera via gstreamer on Jetson: jetson
-        - e.g. ./main jetson
+        - ./main jetson
 ```
 
 ## Note
@@ -191,7 +190,7 @@ I utilized the following OSS in this project. I appreciate your great works, tha
 - OpenCV
     - https://github.com/opencv/opencv
     - Licensed under the Apache License, Version 2.0
-- Others
+- YoutTube
     - https://www.youtube.com/watch?v=tTuUjnISt9s
     - Licensed under the Creative Commons license
     - Copyright Dashcam Roadshow 2020
