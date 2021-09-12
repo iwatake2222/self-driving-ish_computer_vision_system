@@ -47,16 +47,18 @@ limitations under the License.
 #endif
 
 #if defined(MODEL_TYPE_TFLITE)
-#define MODEL_NAME  "LDRN_KITTI_ResNext101_256_512_sim.tflite"
-#define INPUT_NAME  "input.1"
-#define INPUT_DIMS  { 1, 256, 512, 3 }
+#define MODEL_NAME  "ldrn_kitti_resnext101_pretrained_data_grad_192x320.tflite"
+#define INPUT_NAME  "input_1"
+#define INPUT_DIMS  { 1, 192, 320, 3 }
 #define IS_NCHW     false
 #define IS_RGB      true
-#define OUTPUT_NAME "2499"
+#define OUTPUT_NAME "Identity"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
 #elif defined(MODEL_TYPE_ONNX)
+//#define MODEL_NAME  "ldrn_kitti_resnext101_pretrained_data_grad_192x320.onnx"
 #define MODEL_NAME  "LDRN_KITTI_ResNext101_256_512_sim.onnx"
 #define INPUT_NAME  "input.1"
+//#define INPUT_DIMS  { 1, 3, 192, 320 }
 #define INPUT_DIMS  { 1, 3, 256, 512 }
 #define IS_NCHW     true
 #define IS_RGB      true
@@ -71,7 +73,6 @@ int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_t
     /* not supported */
     return kRetOk;
 #endif
-
     /* Set model information */
     std::string model_filename = work_dir + "/model/" + MODEL_NAME;
 
@@ -90,7 +91,7 @@ int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_t
 
     /* Set output tensor info */
     output_tensor_info_list_.clear();
-    output_tensor_info_list_.push_back(OutputTensorInfo(OUTPUT_NAME, TENSORTYPE));
+    output_tensor_info_list_.push_back(OutputTensorInfo(OUTPUT_NAME, TENSORTYPE, IS_NCHW));
 
     /* Create and Initialize Inference Helper */
 #if defined(MODEL_TYPE_TFLITE)
@@ -125,7 +126,6 @@ int32_t DepthEngine::Finalize()
     /* not supported */
     return kRetOk;
 #endif
-
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;
@@ -141,7 +141,6 @@ int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
     /* not supported */
     return kRetOk;
 #endif
-
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;
@@ -150,13 +149,12 @@ int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
     const auto& t_pre_process0 = std::chrono::steady_clock::now();
     InputTensorInfo& input_tensor_info = input_tensor_info_list_[0];
     /* do resize and color conversion here because some inference engine doesn't support these operations */
-    float ratio = static_cast<float>(input_tensor_info.GetWidth()) / input_tensor_info.GetHeight();
     int32_t crop_x = 0;
+    int32_t crop_y = 0;
     int32_t crop_w = original_mat.cols;
-    int32_t crop_h = static_cast<int32_t>(crop_w / ratio);
-    int32_t crop_y = (original_mat.rows - crop_h) / 2;
+    int32_t crop_h = original_mat.rows;
     cv::Mat img_src = cv::Mat::zeros(input_tensor_info.GetHeight(), input_tensor_info.GetWidth(), CV_8UC3);
-    CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeStretch);
+    CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeCut);
 
     input_tensor_info.data = img_src.data;
     input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
@@ -184,8 +182,8 @@ int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
     /*** PostProcess ***/
     const auto& t_post_process0 = std::chrono::steady_clock::now();
     /* Retrieve the result */
-    int32_t output_height = output_tensor_info_list_[0].tensor_dims[2];
-    int32_t output_width = output_tensor_info_list_[0].tensor_dims[3];
+    int32_t output_height = output_tensor_info_list_[0].GetHeight();
+    int32_t output_width = output_tensor_info_list_[0].GetWidth();
     // int32_t output_channel = 1;
     float* values = output_tensor_info_list_[0].GetDataAsFloat();
     //printf("%f, %f, %f\n", values[0], values[100], values[400]);
