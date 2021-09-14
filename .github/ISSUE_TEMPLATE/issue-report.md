@@ -10,6 +10,7 @@ assignees: ''
 ## Environment (Hardware)
 - Hardware: Device, CPU, GPU, etc.
 - Software: OS, Compiler, etc.
+(Please include version information)
 
 ## Issue Details
 A clear and concise description of what the issue is.
