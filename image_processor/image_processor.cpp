@@ -160,15 +160,22 @@ int32_t ImageProcessor::Process(const cv::Mat& mat_original, ImageProcessorIf::R
 
     /*** Draw result ***/
     const auto& time_draw0 = std::chrono::steady_clock::now();
-    DrawSegmentation(mat_segmentation, segmentation_result);
-    cv::resize(mat_segmentation, mat_segmentation, mat.size());
-    //cv::add(mat_segmentation, mat, mat);
-    CreateTopViewMat(mat_segmentation, mat_topview);
-    mat_segmentation = mat_segmentation(cv::Rect(0, vanishment_y_, mat_segmentation.cols, mat_segmentation.rows - vanishment_y_));
+    if (!segmentation_result.image_combined.empty() || !segmentation_result.image_list.empty()) {
+        DrawSegmentation(mat_segmentation, segmentation_result);
+        cv::resize(mat_segmentation, mat_segmentation, mat.size());
+        //cv::add(mat_segmentation, mat, mat);
+        CreateTopViewMat(mat_segmentation, mat_topview);
+        mat_segmentation = mat_segmentation(cv::Rect(0, vanishment_y_, mat_segmentation.cols, mat_segmentation.rows - vanishment_y_));
+    } else {
+        mat_topview = cv::Mat::zeros(mat.size(), CV_8UC3);
+    }
     cv::line(mat, cv::Point(0, camera_real_.EstimateVanishmentY()), cv::Point(mat.cols, camera_real_.EstimateVanishmentY()), cv::Scalar(0, 0, 0), 1);
     lane_detection_.Draw(mat, mat_topview, camera_top_);
     object_detection_.Draw(mat, mat_topview);
-    DrawDepth(mat_depth, depth_result);
+
+    if (!depth_result.mat_out.empty()) {
+        DrawDepth(mat_depth, depth_result);
+    }
     const auto& time_draw1 = std::chrono::steady_clock::now();
 
     /*** Draw statistics ***/

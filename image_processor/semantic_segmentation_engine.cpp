@@ -68,6 +68,10 @@ limitations under the License.
 /*** Function ***/
 int32_t SemanticSegmentationEngine::Initialize(const std::string& work_dir, const int32_t num_threads)
 {
+#ifndef ENABLE_SEGMENTATION
+    return kRetOk;
+#endif
+
     num_threads_ = num_threads;
 
     /* Set model information */
@@ -122,6 +126,10 @@ int32_t SemanticSegmentationEngine::Initialize(const std::string& work_dir, cons
 
 int32_t SemanticSegmentationEngine::Finalize()
 {
+#ifndef ENABLE_SEGMENTATION
+    return kRetOk;
+#endif
+
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;
@@ -139,6 +147,10 @@ static cv::Vec3b GetColorForSegmentation[4] = {
 
 int32_t SemanticSegmentationEngine::Process(const cv::Mat& original_mat, Result& result)
 {
+#ifndef ENABLE_SEGMENTATION
+    return kRetOk;
+#endif
+
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;

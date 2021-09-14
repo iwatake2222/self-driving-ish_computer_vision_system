@@ -20,6 +20,20 @@ else()
     set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK ON CACHE BOOL "INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK" FORCE)
 endif()
 
+set(ENABLE_SEGMENTATION on CACHE BOOL "ENABLE_SEGMENTATION? [on/off]")
+if(ENABLE_SEGMENTATION)
+    add_definitions(-DENABLE_SEGMENTATION)
+else()
+    add_definitions(-UENABLE_SEGMENTATION)
+endif()
+
+set(ENABLE_DEPTH on CACHE BOOL "ENABLE_DEPTH? [on/off]")
+if(ENABLE_DEPTH)
+    add_definitions(-DENABLE_DEPTH)
+else()
+    add_definitions(-UENABLE_DEPTH)
+endif()
+
 # Copy resouce
 file(COPY ${PROJECT_SOURCE_DIR}/resource DESTINATION ${CMAKE_BINARY_DIR}/)
 add_definitions(-DRESOURCE_DIR="${CMAKE_BINARY_DIR}/resource/")

@@ -27,6 +27,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
 ## Deep Learning Inference Framework
 - TensorFlow Lite with XNNPACK delegate
     - CPU
+    - Running with CPU is very slow
 - TensorRT
     - GPU
 
@@ -76,6 +77,12 @@ make
 ```sh
 cmake .. -DENABLE_TENSORRT=off  # Use TensorFlow Lite (default)
 cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
+
+cmake .. -DENABLE_SEGMENTATION=on    # Enable Road Segmentation function (default)
+cmake .. -DENABLE_SEGMENTATION=off   # Disable Road Segmentation function
+
+cmake .. -DENABLE_DEPTH=on    # Enable Depth Estimation function (default)
+cmake .. -DENABLE_DEPTH=off   # Disable Depth Estimation function
 ```
 
 ## Usage
@@ -93,6 +100,11 @@ cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
     - use camera via gstreamer on Jetson: jetson
         - ./main jetson
 ```
+
+## Control
+- Mouse Drag: Change top view angle
+- ASDW: Change top view position
+
 
 ## Note
 It will take around 10 - 20 minutes when you execute the app for the first time, due to model conversion
@@ -118,19 +130,22 @@ It will take around 10 - 20 minutes when you execute the app for the first time,
     - road-segmentation-adas-0001, 512x896
     - https://github.com/PINTO0309/PINTO_model_zoo/blob/main/136_road-segmentation-adas-0001/download.sh
 - Depth Estimation
+    - LapDepth, 192x320
+    - https://github.com/PINTO0309/PINTO_model_zoo/blob/main/149_depth_estimation/download.sh
     - LapDepth, 256x512
     - [00_doc/pytorch_pkl_2_onnx_LapDepth.ipynb](00_doc/pytorch_pkl_2_onnx_LapDepth.ipynb)
 
 ## Performance
-| Model  | Jetson Xavier NX | GTX 1070 |
-| ------ | ---------------: | -------: |
-| == Inference time ==                 |
-|  OD    |          10.6 ms |   6.4 ms |
-|  Lane  |           9.6 ms |   4.9 ms |
-|  Road  |          29.1 ms |  13.5 ms |
-|  Depth |          55.2 ms |  37.8 ms |
-| == FPS ==                            |
-|  Total |          7.1 fps | 10.9 fps |
+| Model                            | Jetson Xavier NX | GTX 1070 |
+| -------------------------------- | ---------------: | -------: |
+| == Inference time ==                                           |
+|  Object Detection                |          10.6 ms |   6.4 ms |
+|  Lane Detection                  |           9.6 ms |   4.9 ms |
+|  Road Segmentation               |          29.1 ms |  13.5 ms |
+|  Depth Estimation                |          55.2 ms |  37.8 ms |
+| == FPS ==                                                      |
+|  Total (All functions)           |          6.8 fps | 10.9 fps |
+|  Total (w/o Segmentation, Depth) |         24.4 fps | 33.3 fps |
 
 * Input
     - Jetson Xavier NX: Camera

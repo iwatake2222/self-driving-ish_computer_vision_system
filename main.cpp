@@ -298,7 +298,7 @@ int main(int argc, char* argv[])
             if (!result.mat_output_segmentation.empty()) cvui::imshow(kWindowSegmentation, result.mat_output_segmentation);
             if (!result.mat_output_depth.empty()) cvui::imshow(kWindowDepth, result.mat_output_depth);
         } else {
-            cv::Mat mat = cv::Mat::zeros(cv::Size(result.mat_output.cols + result.mat_output_topview.cols, result.mat_output.rows + result.mat_output_segmentation.rows), CV_8UC3);
+            cv::Mat mat = cv::Mat::zeros(cv::Size(result.mat_output.cols + result.mat_output_topview.cols, result.mat_output.rows + (std::max)(result.mat_output_depth.rows, result.mat_output_segmentation.rows)), CV_8UC3);
             result.mat_output.copyTo(mat(cv::Rect(0, 0, result.mat_output.cols, result.mat_output.rows)));
             if (!result.mat_output_topview.empty()) result.mat_output_topview.copyTo(mat(cv::Rect(result.mat_output.cols, 0, result.mat_output_topview.cols, result.mat_output_topview.rows)));
             if (!result.mat_output_depth.empty()) result.mat_output_depth.copyTo(mat(cv::Rect(result.mat_output.cols, result.mat_output_topview.rows, result.mat_output_depth.cols, result.mat_output_depth.rows)));

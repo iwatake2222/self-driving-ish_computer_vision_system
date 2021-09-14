@@ -72,6 +72,10 @@ limitations under the License.
 /*** Function ***/
 int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_threads)
 {
+#ifndef ENABLE_DEPTH
+    return kRetOk;
+#endif
+
     /* Set model information */
     std::string model_filename = work_dir + "/model/" + MODEL_NAME;
 
@@ -121,6 +125,10 @@ int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_t
 
 int32_t DepthEngine::Finalize()
 {
+#ifndef ENABLE_DEPTH
+    return kRetOk;
+#endif
+
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;
@@ -132,6 +140,10 @@ int32_t DepthEngine::Finalize()
 
 int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
 {
+#ifndef ENABLE_DEPTH
+    return kRetOk;
+#endif
+
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;
