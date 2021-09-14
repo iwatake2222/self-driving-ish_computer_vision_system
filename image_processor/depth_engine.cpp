@@ -55,11 +55,14 @@ limitations under the License.
 #define OUTPUT_NAME "Identity"
 #define TENSORTYPE  TensorInfo::kTensorTypeFp32
 #elif defined(MODEL_TYPE_ONNX)
-//#define MODEL_NAME  "ldrn_kitti_resnext101_pretrained_data_grad_192x320.onnx"
-#define MODEL_NAME  "LDRN_KITTI_ResNext101_256_512_sim.onnx"
-#define INPUT_NAME  "input.1"
-//#define INPUT_DIMS  { 1, 3, 192, 320 }
+#if 1
+#define MODEL_NAME  "ldrn_kitti_resnext101_pretrained_data_grad_256x512.onnx"
 #define INPUT_DIMS  { 1, 3, 256, 512 }
+#else
+#define MODEL_NAME  "ldrn_kitti_resnext101_pretrained_data_grad_192x320.onnx"
+#define INPUT_DIMS  { 1, 3, 192, 320 }
+#endif
+#define INPUT_NAME  "input.1"
 #define IS_NCHW     true
 #define IS_RGB      true
 #define OUTPUT_NAME "2499"
@@ -69,10 +72,6 @@ limitations under the License.
 /*** Function ***/
 int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_threads)
 {
-#if defined(MODEL_TYPE_TFLITE)
-    /* not supported */
-    return kRetOk;
-#endif
     /* Set model information */
     std::string model_filename = work_dir + "/model/" + MODEL_NAME;
 
@@ -122,10 +121,6 @@ int32_t DepthEngine::Initialize(const std::string& work_dir, const int32_t num_t
 
 int32_t DepthEngine::Finalize()
 {
-#if defined(MODEL_TYPE_TFLITE)
-    /* not supported */
-    return kRetOk;
-#endif
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;
@@ -137,10 +132,6 @@ int32_t DepthEngine::Finalize()
 
 int32_t DepthEngine::Process(const cv::Mat& original_mat, Result& result)
 {
-#if defined(MODEL_TYPE_TFLITE)
-    /* not supported */
-    return kRetOk;
-#endif
     if (!inference_helper_) {
         PRINT_E("Inference helper is not created\n");
         return kRetErr;

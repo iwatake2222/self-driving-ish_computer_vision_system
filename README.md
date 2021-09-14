@@ -34,7 +34,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
 ## Requirements
 - OpenCV 4.x
 - CMake
-- (TensorRT)
+- (TensorRT 8.0.x)
 
 ## Common 
 - Get source code
