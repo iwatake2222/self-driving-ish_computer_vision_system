@@ -103,7 +103,7 @@ cmake .. -DENABLE_DEPTH=off   # Disable Depth Estimation function
 
 ## Control
 - Mouse Drag: Change top view angle
-- ASDW: Change top view position
+- Keyboard (asdwzx) : Change top view position
 
 
 ## Note
