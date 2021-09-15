@@ -7,7 +7,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
     - Object Detection and Tracking
     - Lane Detection and Curve Fitting
     - Road Segmentation
-    - Depth Estimation (enabled with TensorRT only)
+    - Depth Estimation
 - Transform using Projective Geometry and Pinhole Camera Model
     - Normal View -> Top View
     - Distance Calculation (image plane -> ground plane in world coordinate system)
@@ -39,6 +39,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
 
 ## Download 
 - Get source code
+    - If you use Windows, you can use Git Bash
     ```sh
     git clone https://github.com/iwatake2222/self-driving-ish_computer_vision_system.git
     cd self-driving-ish_computer_vision_system
@@ -48,11 +49,14 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
     tensorflow/lite/tools/make/download_dependencies.sh
     ```
 - Download prebuilt library
-    - Download prebuilt libraries (third_party.zip) from https://github.com/iwatake2222/InferenceHelper/releases/
+    - Please find `third_party.zip` in https://github.com/iwatake2222/InferenceHelper/releases/
     - Extract it to `inference_helper/third_party/`
+        - The prebuilt library will be placed at `inference_helper/third_party/ooo_prebuilt`
 - Download models
-    - Download models (resource.zip) from https://github.com/iwatake2222/self-driving-ish_computer_vision_system/releases/
+    - Please find `resource.zip` in https://github.com/iwatake2222/self-driving-ish_computer_vision_system/releases/
     - Extract it to `resource/`
+        - The model files will be placed at `resource/model/ooo.onnx`
+
 
 ## Windows (Visual Studio)
 - Configure and Generate a new project using cmake-gui for Visual Studio 2019 64-bit
@@ -131,7 +135,7 @@ It will take around 10 - 20 minutes when you execute the app for the first time,
     - https://github.com/PINTO0309/PINTO_model_zoo/blob/main/136_road-segmentation-adas-0001/download.sh
 - Depth Estimation
     - LapDepth, 192x320
-    - https://github.com/PINTO0309/PINTO_model_zoo/blob/main/149_depth_estimation/download.sh
+    - https://github.com/PINTO0309/PINTO_model_zoo/blob/main/148_LapDepth/download_ldrn_kitti_resnext101.sh
     - LapDepth, 256x512
     - [00_doc/pytorch_pkl_2_onnx_LapDepth.ipynb](00_doc/pytorch_pkl_2_onnx_LapDepth.ipynb)
 
