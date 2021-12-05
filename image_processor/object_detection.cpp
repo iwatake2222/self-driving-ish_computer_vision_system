@@ -92,14 +92,21 @@ int32_t ObjectDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transfor
     }
 
     /* Calcualte points in world coordinate (distance on ground plane) */
+    std::vector<cv::Point2f> image_point_list;
+    std::vector<cv::Point3f> object_point_list;
     for (auto& track : track_list) {
         const auto& bbox = track.GetLatestData().bbox;
+        image_point_list.push_back(cv::Point2f(bbox.x + bbox.w / 2.0f, bbox.y + bbox.h + 0.0f));
+    }
+    camera.ConvertImage2GroundPlane(image_point_list, object_point_list);
+
+    int32_t index = 0;
+    for (auto& track : track_list) {
         auto& object_point_track = track.GetLatestData().object_point;
-        cv::Point3f object_point;
-        camera.ProjectImage2GroundPlane(cv::Point2f(bbox.x + bbox.w / 2.0f, bbox.y + bbox.h + 0.0f), object_point);
-        object_point_track.x = object_point.x;
-        object_point_track.y = object_point.y;
-        object_point_track.z = object_point.z;
+        object_point_track.x = object_point_list[index].x;
+        object_point_track.y = object_point_list[index].y;
+        object_point_track.z = object_point_list[index].z;
+        index++;
     }
 
     return kRetOk;

@@ -152,28 +152,28 @@ static void TreatKeyInputMain(std::unique_ptr<ImageProcessorIf>& image_processor
     key &= 0xFF;
     switch (key) {
     case 'w':
-        top_tvec[2] -= kIncPosPerFrame;
-        break;
-    case 'W':
-        top_tvec[2] -= kIncPosPerFrame * 3;
-        break;
-    case 's':
         top_tvec[2] += kIncPosPerFrame;
         break;
-    case 'S':
+    case 'W':
         top_tvec[2] += kIncPosPerFrame * 3;
         break;
+    case 's':
+        top_tvec[2] -= kIncPosPerFrame;
+        break;
+    case 'S':
+        top_tvec[2] -= kIncPosPerFrame * 3;
+        break;
     case 'a':
-        top_tvec[0] += kIncPosPerFrame;
-        break;
-    case 'A':
-        top_tvec[0] += kIncPosPerFrame * 3;
-        break;
-    case 'd':
         top_tvec[0] -= kIncPosPerFrame;
         break;
-    case 'D':
+    case 'A':
         top_tvec[0] -= kIncPosPerFrame * 3;
+        break;
+    case 'd':
+        top_tvec[0] += kIncPosPerFrame;
+        break;
+    case 'D':
+        top_tvec[0] += kIncPosPerFrame * 3;
         break;
     case 'z':
         top_tvec[1] += kIncPosPerFrame;

@@ -261,36 +261,36 @@ cv::Scalar ImageProcessor::GetColorForSegmentation(int32_t id)
 void ImageProcessor::ResetCamera(int32_t width, int32_t height, float fov_deg)
 {
     if (width > 0 && height > 0 && fov_deg > 0) {
-        camera_real_.parameter.SetIntrinsic(width, height, CameraModel::FocalLength(width, fov_deg));
-        camera_top_.parameter.SetIntrinsic(static_cast<int32_t>(width * kTopViewSizeRatio), static_cast<int32_t>(height * kTopViewSizeRatio), CameraModel::FocalLength(static_cast<int32_t>(width * kTopViewSizeRatio), fov_deg));
+        camera_real_.SetIntrinsic(width, height, FocalLength(width, fov_deg));
+        camera_top_.SetIntrinsic(static_cast<int32_t>(width * kTopViewSizeRatio), static_cast<int32_t>(height * kTopViewSizeRatio), FocalLength(static_cast<int32_t>(width * kTopViewSizeRatio), fov_deg));
     }
-    camera_real_.parameter.SetExtrinsic(
+    camera_real_.SetExtrinsic(
         { 0.0f, 0.0f, 0.0f },    /* rvec [deg] */
-        { 0.0f, 1.5f, 0.0f });   /* tvec */
-    camera_top_.parameter.SetExtrinsic(
+        { 0.0f, -1.5f, 0.0f }, true);   /* tvec (Oc - Ow in world coordinate. X+= Right, Y+ = down, Z+ = far) */
+    camera_top_.SetExtrinsic(
         { 90.0f, 0.0f, 0.0f },    /* rvec [deg] */
-        { 0.0f, 11.0f, 8.0f });   /* tvec */  /* tvec is in camera coordinate, so Z is height because pitch = 90 */
+        { 0.0f, -8.0f, 11.0f }, true);   /* tvec (Oc - Ow in world coordinate. X+= Right, Y+ = down, Z+ = far) */
     CreateTransformMat();
     vanishment_y_ = std::max(0, std::min(height, camera_real_.EstimateVanishmentY()));
 }
 
 void ImageProcessor::GetCameraParameter(float& focal_length, std::array<float, 3>& real_rvec, std::array<float, 3>& real_tvec, std::array<float, 3>& top_rvec, std::array<float, 3>& top_tvec)
 {
-    focal_length = camera_real_.parameter.fx();
-    camera_real_.parameter.GetExtrinsic(real_rvec, real_tvec);
-    camera_top_.parameter.GetExtrinsic(top_rvec, top_tvec);
+    focal_length = camera_real_.fx();
+    camera_real_.GetExtrinsic(real_rvec, real_tvec);
+    camera_top_.GetExtrinsic(top_rvec, top_tvec);
 }
 
 void ImageProcessor::SetCameraParameter(float focal_length, const std::array<float, 3>& real_rvec, const std::array<float, 3>& real_tvec, const std::array<float, 3>& top_rvec, const std::array<float, 3>& top_tvec)
 {
-    camera_real_.parameter.fx() = focal_length;
-    camera_real_.parameter.fy() = focal_length;
-    camera_top_.parameter.fx() = focal_length * kTopViewSizeRatio;
-    camera_top_.parameter.fy() = focal_length * kTopViewSizeRatio;
-    camera_real_.parameter.SetExtrinsic(real_rvec, real_tvec);
-    camera_top_.parameter.SetExtrinsic(top_rvec, top_tvec);
+    camera_real_.fx() = focal_length;
+    camera_real_.fy() = focal_length;
+    camera_top_.fx() = focal_length * kTopViewSizeRatio;
+    camera_top_.fy() = focal_length * kTopViewSizeRatio;
+    camera_real_.SetExtrinsic(real_rvec, real_tvec);
+    camera_top_.SetExtrinsic(top_rvec, top_tvec);
     CreateTransformMat();
-    vanishment_y_ = std::max(0, std::min(camera_real_.parameter.height, camera_real_.EstimateVanishmentY()));
+    vanishment_y_ = std::max(0, std::min(camera_real_.height, camera_real_.EstimateVanishmentY()));
 }
 
 void ImageProcessor::CreateTransformMat()
@@ -303,11 +303,11 @@ void ImageProcessor::CreateTransformMat()
         {  1.0f, 0,  3.0f },
     };
     std::vector<cv::Point2f> image_point_real_list;
-    cv::projectPoints(object_point_list, camera_real_.parameter.rvec, camera_real_.parameter.tvec, camera_real_.parameter.K, camera_real_.parameter.dist_coeff, image_point_real_list);
+    cv::projectPoints(object_point_list, camera_real_.rvec, camera_real_.tvec, camera_real_.K, camera_real_.dist_coeff, image_point_real_list);
 
     /* Convert to image points (2D) using the top view camera (virtual camera) */
     std::vector<cv::Point2f> image_point_top_list;
-    cv::projectPoints(object_point_list, camera_top_.parameter.rvec, camera_top_.parameter.tvec, camera_top_.parameter.K, camera_top_.parameter.dist_coeff, image_point_top_list);
+    cv::projectPoints(object_point_list, camera_top_.rvec, camera_top_.tvec, camera_top_.K, camera_top_.dist_coeff, image_point_top_list);
 
     mat_transform_ = cv::getPerspectiveTransform(&image_point_real_list[0], &image_point_top_list[0]);
 }
@@ -315,7 +315,7 @@ void ImageProcessor::CreateTransformMat()
 void ImageProcessor::CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_topview)
 {
     /* Perspective Transform */   
-    mat_topview = cv::Mat(cv::Size(camera_top_.parameter.width, camera_top_.parameter.height), CV_8UC3, COLOR_BG);
+    mat_topview = cv::Mat(cv::Size(camera_top_.width, camera_top_.height), CV_8UC3, COLOR_BG);
     //cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
     cv::warpPerspective(mat_original, mat_topview, mat_transform_, mat_topview.size(), cv::INTER_NEAREST);
 
@@ -329,7 +329,7 @@ void ImageProcessor::CreateTopViewMat(const cv::Mat& mat_original, cv::Mat& mat_
         object_point_list.push_back(cv::Point3f(kHorizontalRange, 0, z));
     }
     std::vector<cv::Point2f> image_point_list;
-    cv::projectPoints(object_point_list, camera_top_.parameter.rvec, camera_top_.parameter.tvec, camera_top_.parameter.K, camera_top_.parameter.dist_coeff, image_point_list);
+    cv::projectPoints(object_point_list, camera_top_.rvec, camera_top_.tvec, camera_top_.K, camera_top_.dist_coeff, image_point_list);
     for (int32_t i = 0; i < static_cast<int32_t>(image_point_list.size()); i++) {
         if (i % 2 != 0) {
             cv::line(mat_topview, image_point_list[i - 1], image_point_list[i], cv::Scalar(255, 255, 255));

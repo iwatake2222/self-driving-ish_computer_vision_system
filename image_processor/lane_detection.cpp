@@ -95,10 +95,10 @@ int32_t LaneDetection::Process(const cv::Mat& mat, const cv::Mat& mat_transform,
     ground_line_list_.clear();
     for (const auto& line : normal_line_list_) {
         std::vector<cv::Point2f> ground_line;
-        for (const auto& p : line) {
-            cv::Point3f object_point;
-            camera.ProjectImage2GroundPlane(p, object_point);
-            ground_line.push_back({ object_point.z, object_point.x });
+        std::vector<cv::Point3f> ground_line_xyz;
+        camera.ConvertImage2GroundPlane(line, ground_line_xyz);
+        for (const auto& p : ground_line_xyz) {
+            ground_line.push_back({ p.z, p.x });
         }
         ground_line_list_.push_back(ground_line);
     }
@@ -212,8 +212,8 @@ void LaneDetection::Draw(cv::Mat& mat, cv::Mat& mat_topview, CameraModel& camera
                 float x1 = static_cast<float>(coeff.a * z1 * z1 + coeff.b * z1 + coeff.c);
                 cv::Point2f image_point_0;
                 cv::Point2f image_point_1;
-                camera.ProjectWorld2Image({ x0, 0, z0 }, image_point_0);
-                camera.ProjectWorld2Image({ x1, 0, z1 }, image_point_1);
+                camera.ConvertWorld2Image({ x0, 0, z0 }, image_point_0);
+                camera.ConvertWorld2Image({ x1, 0, z1 }, image_point_1);
                 cv::line(mat_topview, image_point_0, image_point_1, GetColorForLine(line_index), 2);
             }
         }

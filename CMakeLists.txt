@@ -56,6 +56,11 @@ find_package(OpenCV REQUIRED)
 target_include_directories(${ProjectName} PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(${ProjectName} ${OpenCV_LIBS})
 
+## OpenMP
+find_package(OpenMP REQUIRED)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+
 ## cvui
 target_include_directories(${ProjectName} PUBLIC ${PROJECT_SOURCE_DIR}/cvui)
 

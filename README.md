@@ -23,6 +23,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
 - Windows 10 (x64) + Visual Studio 2019
     - Intel Core i7-6700 @ 3.4GHz + NVIDIA GeForce GTX 1070
 - Jetson Xavier NX. JetPack 4.6
+    - You will get error if using JetPack 4.5 or before because of TensorRT error
 
 ## Deep Learning Inference Framework
 - TensorFlow Lite with XNNPACK delegate
@@ -35,7 +36,8 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
 ## Requirements
 - OpenCV 4.x
 - CMake
-- (TensorRT 8.0.x)
+- TensorRT 8.0.x
+    - If you get build error related to TensorRT, modify cmake settings for it in `inference_helper/inference_helper/CMakeLists.txt`
 
 ## Download 
 - Get source code
@@ -111,7 +113,9 @@ cmake .. -DENABLE_DEPTH=off   # Disable Depth Estimation function
 
 
 ## Note
-It will take around 10 - 20 minutes when you execute the app for the first time, due to model conversion
+It will take very long time when you execute the app for the first time, due to model conversion
+    - I took 80 minutes with RTX 3060ti
+    - I took 10 - 20 minutes with GTX 1070
 
 # Software Design
 ## Class Diagram
