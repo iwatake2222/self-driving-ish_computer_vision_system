@@ -1,7 +1,6 @@
-# Self-Driving-ish Computer Vision System
-
 https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-8675-3999adf9cdb6.mp4
 
+# Self-Driving-ish Computer Vision System
 - This project generates images you've probably seen in autonomous driving demo
 - Detection
     - Object Detection and Tracking
@@ -28,70 +27,11 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
 ## Deep Learning Inference Framework
 - TensorFlow Lite with XNNPACK delegate
     - CPU
-    - Running with CPU is very slow
+    - Note: Running with CPU is very slow
 - TensorRT
     - GPU
 
-# How to Build and Run
-## Requirements
-- OpenCV 4.x
-- CMake
-- TensorRT 8.0.x
-    - If you get build error related to TensorRT, modify cmake settings for it in `inference_helper/inference_helper/CMakeLists.txt`
-
-## Download 
-- Get source code
-    - If you use Windows, you can use Git Bash
-    ```sh
-    git clone https://github.com/iwatake2222/self-driving-ish_computer_vision_system.git
-    cd self-driving-ish_computer_vision_system
-    git submodule update --init --recursive --recommend-shallow --depth 1
-    cd inference_helper/third_party/tensorflow
-    chmod +x tensorflow/lite/tools/make/download_dependencies.sh
-    tensorflow/lite/tools/make/download_dependencies.sh
-    ```
-- Download prebuilt library
-    - Please find `third_party.zip` in https://github.com/iwatake2222/InferenceHelper/releases/
-    - Extract it to `inference_helper/third_party/`
-        - The prebuilt library will be placed at `inference_helper/third_party/ooo_prebuilt`
-- Download models
-    - Please find `resource.zip` in https://github.com/iwatake2222/self-driving-ish_computer_vision_system/releases/
-    - Extract it to `resource/`
-        - The model files will be placed at `resource/model/ooo.onnx`
-
-
-## Windows (Visual Studio)
-- Configure and Generate a new project using cmake-gui for Visual Studio 2019 64-bit
-    - `Where is the source code` : path-to-cloned-folder
-    - `Where to build the binaries` : path-to-build	(any)
-- Open `main.sln`
-- Set `main` project as a startup project, then build and run!
-- Note:
-    - Running with `Debug` causes exception, so use `Release` or `RelWithDebInfo` if you use TensorFlow Lite
-    - You may need to modify cmake setting for TensorRT for your environment
-
-## Linux (Jetson Xavier NX)
-```sh
-mkdir build && cd build
-# cmake .. -DENABLE_TENSORRT=off
-cmake .. -DENABLE_TENSORRT=on
-make
-./main
-```
-
-## cmake options
-```sh
-cmake .. -DENABLE_TENSORRT=off  # Use TensorFlow Lite (default)
-cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
-
-cmake .. -DENABLE_SEGMENTATION=on    # Enable Road Segmentation function (default)
-cmake .. -DENABLE_SEGMENTATION=off   # Disable Road Segmentation function
-
-cmake .. -DENABLE_DEPTH=on    # Enable Depth Estimation function (default)
-cmake .. -DENABLE_DEPTH=off   # Disable Depth Estimation function
-```
-
-## Usage
+# Usage
 ```
 ./main [input]
  - input:
@@ -107,13 +47,64 @@ cmake .. -DENABLE_DEPTH=off   # Disable Depth Estimation function
         - ./main jetson
 ```
 
-## Control
 - Mouse Drag: Change top view angle
 - Keyboard (asdwzx) : Change top view position
 
 
-## Note
-It will take very long time when you execute the app for the first time, due to model conversion
+# How to build a project
+## 0. Requirements
+- OpenCV 4.x
+- CMake
+- TensorRT 8.0.x
+    - If you get build error related to TensorRT, modify cmake settings for it in `inference_helper/inference_helper/CMakeLists.txt`
+
+## 1. Download source code and pre-built libraries 
+- Download source code
+    - If you use Windows, you can use Git Bash
+    ```sh
+    git clone https://github.com/iwatake2222/self-driving-ish_computer_vision_system.git
+    cd self-driving-ish_computer_vision_system
+    git submodule update --init
+    sh inference_helper/third_party/download_prebuilt_libraries.sh
+    ```
+- Download models
+    ```sh
+    sh ./download_resource.sh
+    ```
+
+## 2-a. Windows (Visual Studio)
+- Configure and Generate a new project using cmake-gui for Visual Studio 2019 64-bit
+    - `Where is the source code` : path-to-cloned-folder
+    - `Where to build the binaries` : path-to-build	(any)
+- Open `main.sln`
+- Set `main` project as a startup project, then build and run!
+- Note:
+    - You may need to modify cmake setting for TensorRT for your environment
+
+## 2-b. Linux (Jetson Xavier NX)
+```sh
+mkdir build && cd build
+# cmake .. -DENABLE_TENSORRT=off
+cmake .. -DENABLE_TENSORRT=on
+make
+./main
+```
+
+# Note
+## cmake options
+```sh
+cmake .. -DENABLE_TENSORRT=off  # Use TensorFlow Lite (default)
+cmake .. -DENABLE_TENSORRT=on   # Use TensorRT
+
+cmake .. -DENABLE_SEGMENTATION=on    # Enable Road Segmentation function (default)
+cmake .. -DENABLE_SEGMENTATION=off   # Disable Road Segmentation function
+
+cmake .. -DENABLE_DEPTH=on    # Enable Depth Estimation function (default)
+cmake .. -DENABLE_DEPTH=off   # Disable Depth Estimation function
+```
+
+## Misc
+- It will take very long time when you execute the app for the first time, due to model conversion
     - I took 80 minutes with RTX 3060ti
     - I took 10 - 20 minutes with GTX 1070
 
@@ -123,7 +114,6 @@ It will take very long time when you execute the app for the first time, due to 
 
 ## Data Flow Diagram
 ![data_flow_diagram](00_doc/data_flow_diagram.jpg)
-
 
 # Model Information
 ## Details
