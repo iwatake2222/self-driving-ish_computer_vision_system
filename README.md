@@ -72,7 +72,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
     sh ./download_resource.sh
     ```
 
-## 2-a. Windows (Visual Studio)
+## 2-a. Build in Windows (Visual Studio)
 - Configure and Generate a new project using cmake-gui for Visual Studio 2019 64-bit
     - `Where is the source code` : path-to-cloned-folder
     - `Where to build the binaries` : path-to-build	(any)
@@ -81,7 +81,7 @@ https://user-images.githubusercontent.com/11009876/132947317-3c839522-b347-4a8d-
 - Note:
     - You may need to modify cmake setting for TensorRT for your environment
 
-## 2-b. Linux (Jetson Xavier NX)
+## 2-b. Build in Linux (Jetson Xavier NX)
 ```sh
 mkdir build && cd build
 # cmake .. -DENABLE_TENSORRT=off
